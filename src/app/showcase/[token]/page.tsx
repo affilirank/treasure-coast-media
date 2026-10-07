@@ -20,7 +20,7 @@ export default async function ShowcasePage({ params }: PageProps<"/showcase/[tok
     <main className="min-h-screen bg-[#0d0f10] text-neutral-100">
       <header className="mx-auto max-w-6xl px-5 pb-6 pt-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/_next/image?url=%2Fimages%2Fmerit-logo.png&w=128&q=80" alt="Merit Media & Marketing" width={56} height={56} className="mb-4 h-14 w-14 rounded-lg" />
+        <img src="/_next/image?url=%2Fimages%2Fmerit-logo.png&w=128&q=75" alt="Merit Media & Marketing" width={56} height={56} className="mb-4 h-14 w-14 rounded-lg" />
         <p className="text-xs uppercase tracking-[0.2em] text-[#c4a16a]">{listing.brokerage_name ?? "Featured Listing"}</p>
         <h1 className="mt-1 text-3xl font-semibold">{listing.property_address}</h1>
         <p className="text-neutral-400">{location}</p>

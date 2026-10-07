@@ -57,7 +57,7 @@ function escapeHtml(value: string) {
 function logoUrl() {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.meritmediafl.com").replace(/\/+$/, "");
   // Resized through the Next.js image optimizer; the source PNG is 1.5 MB.
-  return `${base}/_next/image?url=${encodeURIComponent("/images/merit-logo.png")}&w=128&q=80`;
+  return `${base}/_next/image?url=${encodeURIComponent("/images/merit-logo.png")}&w=128&q=75`;
 }
 
 function emailShell(body: string) {
