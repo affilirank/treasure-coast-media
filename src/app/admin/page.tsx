@@ -95,7 +95,9 @@ export default function AdminPortalPage() {
 
   async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fileInput = (event.currentTarget.elements.namedItem("file") as HTMLInputElement | null)?.files?.[0];
+    // currentTarget is null after an await, so keep a reference to the form.
+    const form = event.currentTarget;
+    const fileInput = (form.elements.namedItem("file") as HTMLInputElement | null)?.files?.[0];
     if (!fileInput) {
       setError("Choose an image or file to upload.");
       return;
@@ -118,7 +120,7 @@ export default function AdminPortalPage() {
         body: fileInput,
       });
       if (!uploadResponse.ok) throw new Error("The file could not be uploaded.");
-      event.currentTarget.reset();
+      form.reset();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");
     } finally {
@@ -155,6 +157,9 @@ export default function AdminPortalPage() {
             <p style={{ margin: 0, fontSize: 12, letterSpacing: 2, textTransform: "uppercase", color: "#d4b37a" }}>Admin delivery</p>
             <h1 style={{ margin: "8px 0 0", fontSize: 40 }}>Project delivery hub</h1>
           </div>
+          <a href="/admin/deliveries/new" style={{ marginLeft: "auto", background: "#d4b37a", color: "#14201e", fontWeight: 700, borderRadius: 10, padding: "10px 14px", textDecoration: "none" }}>
+            + New media delivery
+          </a>
           <button type="button" onClick={async () => { await fetch("/api/portal/login", { method: "DELETE" }); setAuthenticated(false); }} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "transparent", color: "#fff", borderRadius: 10, padding: "10px 14px", cursor: "pointer" }}>
             Log out
           </button>
