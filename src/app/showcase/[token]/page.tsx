@@ -18,6 +18,11 @@ export default async function ShowcasePage({ params }: PageProps<"/showcase/[tok
 
   return (
     <main className="min-h-screen bg-[#0d0f10] text-neutral-100">
+      {!tour.isPaid && (
+        <p className="bg-amber-200 px-4 py-2 text-center text-sm font-semibold text-neutral-900">
+          PREVIEW — the full tour, video and floor plan unlock once the invoice is paid.
+        </p>
+      )}
       <header className="mx-auto max-w-6xl px-5 pb-6 pt-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/_next/image?url=%2Fimages%2Fmerit-logo.png&w=128&q=75" alt="Merit Media & Marketing" width={56} height={56} className="mb-4 h-14 w-14 rounded-lg" />

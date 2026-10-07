@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/admin-guard";
-import { ASSET_TYPES, deliveryLinks, formatMoney, type AssetType } from "@/lib/delivery";
-import { sendPaymentRequestEmail } from "@/lib/email";
+import { ASSET_TYPES, deliveryLinks, type AssetType, type Listing } from "@/lib/delivery";
+import { sendPaymentEmail } from "@/lib/reminders";
 import { objectExists, UPLOAD_KEY_PATTERN } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -94,8 +94,8 @@ export async function POST(request: Request) {
       package_type,
       invoice_amount: Math.round(invoice_amount * 100) / 100,
     })
-    .select("id, access_token")
-    .single();
+    .select("*")
+    .single<Listing>();
   if (error || !listing) return Response.json({ error: "Could not create the listing." }, { status: 500 });
 
   const { error: assetError } = await db.from("listing_assets").insert(
@@ -117,15 +117,8 @@ export async function POST(request: Request) {
   let emailStatus: "sent" | "preview" | "failed" | "skipped" = "skipped";
   if (body.listing?.send_email !== false) {
     try {
-      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-      const result = await sendPaymentRequestEmail({
-        to: adminEmail ? [agent_email, adminEmail] : [agent_email],
-        agentName: agent_name,
-        propertyAddress: property_address,
-        amount: formatMoney(invoice_amount),
-        deliveryUrl: links.delivery,
-      });
-      emailStatus = result.status;
+      const result = await sendPaymentEmail(listing, "request");
+      emailStatus = result;
     } catch (cause) {
       console.error("Payment request email failed", cause);
       emailStatus = "failed";

@@ -14,6 +14,11 @@ export default async function MlsTourPage({ params }: PageProps<"/mls/[token]">)
 
   return (
     <main className="min-h-screen bg-black">
+      {!tour.isPaid && (
+        <p className="bg-amber-200 px-4 py-2 text-center text-sm font-semibold text-neutral-900">
+          PREVIEW — the full tour, video and floor plan unlock once the invoice is paid.
+        </p>
+      )}
       <TourViewer
         images={tour.images}
         videoUrl={tour.videoUrl}
