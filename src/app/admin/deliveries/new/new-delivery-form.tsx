@@ -231,6 +231,7 @@ export default function NewDeliveryForm() {
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
       <nav className="mb-6 flex items-center justify-end gap-4 text-sm">
+        <a href="/admin/deliveries" className="text-neutral-600 underline">All deliveries</a>
         <a href="/admin?hub=1" className="text-neutral-600 underline">Client file hub</a>
         <button
           type="button"

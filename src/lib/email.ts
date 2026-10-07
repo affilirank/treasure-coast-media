@@ -103,6 +103,28 @@ export async function sendPaymentRequestEmail(input: { to: string[]; agentName: 
   return { status: "sent" as const };
 }
 
+export async function sendPaymentReminderEmail(input: { to: string[]; agentName: string; propertyAddress: string; amount: string; deliveryUrl: string; reminderNumber: number }) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const };
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">Friendly reminder: invoice due</h2>
+    <p>Hi ${escapeHtml(input.agentName)},</p>
+    <p>This is a reminder that the invoice for <strong>${escapeHtml(input.propertyAddress)}</strong> is still open.</p>
+    <p><strong>Amount due: ${escapeHtml(input.amount)}</strong><br/>Your full-resolution downloads, MLS-ready files and floor plans unlock as soon as payment is complete.</p>
+    ${button(input.deliveryUrl, "View &amp; Pay")}
+    <p style="color:#65726e;font-size:13px;">If you've already paid, thank you, and please disregard this message.</p>`);
+
+  const result = await new Resend(config.apiKey).emails.send({
+    from: config.from,
+    to: input.to,
+    subject: `Reminder: Invoice ${input.amount} Due for ${input.propertyAddress}`,
+    html,
+  });
+  if (result.error) throw new Error(result.error.message ?? "Failed to send reminder email");
+  return { status: "sent" as const };
+}
+
 export async function sendDeliveryReadyEmail(input: { to: string[]; agentName: string; propertyAddress: string; deliveryUrl: string }) {
   const config = emailConfig();
   if (!config) return { status: "preview" as const };
