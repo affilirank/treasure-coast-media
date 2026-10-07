@@ -124,6 +124,8 @@ export default function NewDeliveryForm() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [links, setLinks] = useState<Links | null>(null);
+  const [emailStatus, setEmailStatus] = useState("");
+  const [sendEmail, setSendEmail] = useState(true);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingId, setBookingId] = useState("");
@@ -204,7 +206,7 @@ export default function NewDeliveryForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          listing: fields,
+          listing: { ...fields, send_email: sendEmail },
           assets: plans.map((p) => ({
             asset_type: p.asset_type,
             full_key: keyOf.get(p.full)!.key,
@@ -216,6 +218,7 @@ export default function NewDeliveryForm() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Could not save the delivery.");
       setLinks(result.links);
+      setEmailStatus(result.emailStatus);
       setStatus("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
@@ -284,6 +287,10 @@ export default function NewDeliveryForm() {
           <Dropzone label="CubiCasa Floor Plan (PNG)" hint="PNG" accept="image/png" files={planImg} onChange={setPlanImg} />
         </section>
 
+        <label className="flex items-center gap-2 text-sm text-neutral-800">
+          <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
+          Email the agent their delivery link and invoice when I create this (you get a copy)
+        </label>
         {error && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <button disabled={busy} className="flex items-center gap-2 rounded-md bg-neutral-900 px-6 py-3 text-sm font-semibold text-amber-200 disabled:opacity-60">
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}{busy ? status || "Working…" : "Create Delivery"}
@@ -296,6 +303,9 @@ export default function NewDeliveryForm() {
           <CopyRow label="Agent Delivery / Payment Portal" url={links.delivery} />
           <CopyRow label="Unbranded MLS Virtual Tour Link" url={links.mls} />
           <CopyRow label="Branded Public Marketing Showcase" url={links.showcase} />
+          {emailStatus === "sent" && <p className="text-sm text-emerald-900">Payment request email sent to the agent and your admin address.</p>}
+          {emailStatus === "failed" && <p className="text-sm text-red-700">The delivery was created but the email failed to send. Copy the delivery link and send it manually.</p>}
+          {emailStatus === "preview" && <p className="text-sm text-red-700">Email is not configured, so no email was sent.</p>}
           <p className="text-xs text-emerald-900">The MLS and showcase links go live once the invoice is paid.</p>
         </section>
       )}

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-guard";
-import { ASSET_TYPES, deliveryLinks, type AssetType } from "@/lib/delivery";
+import { ASSET_TYPES, deliveryLinks, formatMoney, type AssetType } from "@/lib/delivery";
+import { sendPaymentRequestEmail } from "@/lib/email";
 import { objectExists, UPLOAD_KEY_PATTERN } from "@/lib/storage";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -112,5 +113,24 @@ export async function POST(request: Request) {
     return Response.json({ error: "Could not save the listing assets." }, { status: 500 });
   }
 
-  return Response.json({ listingId: listing.id, links: deliveryLinks(listing.access_token) }, { status: 201, headers: { "cache-control": "no-store" } });
+  const links = deliveryLinks(listing.access_token);
+  let emailStatus: "sent" | "preview" | "failed" | "skipped" = "skipped";
+  if (body.listing?.send_email !== false) {
+    try {
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      const result = await sendPaymentRequestEmail({
+        to: adminEmail ? [agent_email, adminEmail] : [agent_email],
+        agentName: agent_name,
+        propertyAddress: property_address,
+        amount: formatMoney(invoice_amount),
+        deliveryUrl: links.delivery,
+      });
+      emailStatus = result.status;
+    } catch (cause) {
+      console.error("Payment request email failed", cause);
+      emailStatus = "failed";
+    }
+  }
+
+  return Response.json({ listingId: listing.id, links, emailStatus }, { status: 201, headers: { "cache-control": "no-store" } });
 }
