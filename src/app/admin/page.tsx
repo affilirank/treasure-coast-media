@@ -9,6 +9,13 @@ type DeliveryProject = {
   createdAt: string;
 };
 
+// New media deliveries are the default landing page; the old client-file hub lives at /admin?hub=1.
+function goToDefaultPage() {
+  if (new URLSearchParams(window.location.search).has("hub")) return false;
+  window.location.replace("/admin/deliveries/new");
+  return true;
+}
+
 export default function AdminPortalPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -27,6 +34,7 @@ export default function AdminPortalPage() {
         const response = await fetch("/api/portal/login");
         const result = await response.json();
         if (!result.authenticated) return;
+        if (goToDefaultPage()) return;
         const projectsResponse = await fetch("/api/portal/projects");
         const projectsResult = await projectsResponse.json();
         if (!projectsResponse.ok) throw new Error(projectsResult.error ?? "Unable to load projects.");
@@ -68,6 +76,7 @@ export default function AdminPortalPage() {
       return;
     }
 
+    if (goToDefaultPage()) return;
     setAuthenticated(true);
     await loadProjects();
   }

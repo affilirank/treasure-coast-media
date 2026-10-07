@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Copy, FileUp, Loader2, X } from "lucide-react";
 import { makeWatermarkedPreview, makeWebRes } from "./image-tools";
 
@@ -109,6 +110,7 @@ async function runPool<T>(items: T[], size: number, worker: (item: T) => Promise
 }
 
 export default function NewDeliveryForm() {
+  const router = useRouter();
   const [fields, setFields] = useState({
     property_address: "", city: "Vero Beach", state: "FL", zip_code: "", agent_name: "", agent_email: "", agent_phone: "",
     brokerage_name: "", agent_headshot_url: "", package_type: PACKAGES[2], invoice_amount: "",
@@ -225,6 +227,16 @@ export default function NewDeliveryForm() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
+      <nav className="mb-6 flex items-center justify-end gap-4 text-sm">
+        <a href="/admin?hub=1" className="text-neutral-600 underline">Client file hub</a>
+        <button
+          type="button"
+          className="rounded-md border border-neutral-300 px-3 py-1 text-neutral-800"
+          onClick={async () => { await fetch("/api/portal/login", { method: "DELETE" }); router.push("/admin"); }}
+        >
+          Log out
+        </button>
+      </nav>
       <h1 className="text-2xl font-bold text-neutral-900">New Delivery</h1>
       <p className="mb-8 text-sm text-neutral-600">Upload a shoot, then share the generated links.</p>
 
