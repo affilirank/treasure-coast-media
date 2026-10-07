@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { Check, Copy, FileUp, Loader2, X } from "lucide-react";
 import { makeWatermarkedPreview, makeWebRes } from "./image-tools";
 
@@ -10,6 +10,11 @@ type AssetPlan = { asset_type: AssetType; full: UploadJob; web: UploadJob; previ
 type Links = { delivery: string; mls: string; showcase: string };
 
 const PACKAGES = ["HDR Photos", "HDR Photos + Drone", "HDR Photos + Drone + Floor Plan", "Full Production (Photos, Drone, Floor Plan, Video)"];
+type Booking = {
+  referenceId: string; shootDate: string; address: string; zip: string; agentName: string; agentEmail: string; agentPhone: string;
+  brokerage: string; package: string; total: number; deposit: number; balanceDue: number;
+};
+
 const input = "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-amber-600 focus:outline-none";
 
 function Dropzone({ label, hint, accept, multiple, files, onChange }: { label: string; hint: string; accept: string; multiple?: boolean; files: File[]; onChange: (files: File[]) => void }) {
@@ -118,6 +123,35 @@ export default function NewDeliveryForm() {
   const [error, setError] = useState("");
   const [links, setLinks] = useState<Links | null>(null);
 
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingId, setBookingId] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/bookings")
+      .then((response) => (response.ok ? response.json() : { bookings: [] }))
+      .then((result) => setBookings(result.bookings ?? []))
+      .catch(() => undefined);
+  }, []);
+
+  const selected = bookings.find((booking) => booking.referenceId === bookingId);
+
+  function pickBooking(id: string) {
+    setBookingId(id);
+    const booking = bookings.find((b) => b.referenceId === id);
+    if (!booking) return;
+    setFields((f) => ({
+      ...f,
+      property_address: booking.address,
+      zip_code: booking.zip || f.zip_code,
+      agent_name: booking.agentName,
+      agent_email: booking.agentEmail,
+      agent_phone: booking.agentPhone,
+      brokerage_name: booking.brokerage,
+      package_type: booking.package || f.package_type,
+      invoice_amount: booking.balanceDue > 0 ? String(booking.balanceDue) : "",
+    }));
+  }
+
   const set = (name: keyof typeof fields) => (e: { target: { value: string } }) => setFields((f) => ({ ...f, [name]: e.target.value }));
 
   async function submit(event: React.FormEvent) {
@@ -195,6 +229,20 @@ export default function NewDeliveryForm() {
       <p className="mb-8 text-sm text-neutral-600">Upload a shoot, then share the generated links.</p>
 
       <form onSubmit={submit} className="space-y-8">
+        <section className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <Field label="Start from a paid booking">
+            <select className={input} value={bookingId} onChange={(e) => pickBooking(e.target.value)}>
+              <option value="">{bookings.length ? "Select a booking to prefill…" : "No paid bookings found — enter details manually"}</option>
+              {bookings.map((b) => <option key={b.referenceId} value={b.referenceId}>{b.address} — {b.agentName}{b.shootDate ? ` (${b.shootDate})` : ""}</option>)}
+            </select>
+          </Field>
+          {selected && (
+            <p className="mt-2 text-xs text-neutral-700">
+              Booking total ${selected.total.toLocaleString()} − deposit paid ${selected.deposit.toLocaleString()} = <strong>balance due ${selected.balanceDue.toLocaleString()}</strong>. Edit the invoice total below if needed.
+            </p>
+          )}
+        </section>
+
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><Field label="Property Address"><input required className={input} value={fields.property_address} onChange={set("property_address")} /></Field></div>
           <Field label="City"><input required className={input} value={fields.city} onChange={set("city")} /></Field>
@@ -208,7 +256,8 @@ export default function NewDeliveryForm() {
           <Field label="Brokerage"><input className={input} value={fields.brokerage_name} onChange={set("brokerage_name")} /></Field>
           <Field label="Agent Headshot URL (https, optional)"><input type="url" className={input} value={fields.agent_headshot_url} onChange={set("agent_headshot_url")} /></Field>
           <Field label="Package">
-            <select className={input} value={fields.package_type} onChange={set("package_type")}>{PACKAGES.map((p) => <option key={p}>{p}</option>)}</select>
+            <input required list="packages" className={input} value={fields.package_type} onChange={set("package_type")} />
+            <datalist id="packages">{PACKAGES.map((p) => <option key={p} value={p} />)}</datalist>
           </Field>
           <Field label="Invoice Total ($)"><input required type="number" min="0.01" step="0.01" className={input} value={fields.invoice_amount} onChange={set("invoice_amount")} /></Field>
         </section>
