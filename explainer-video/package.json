@@ -1,0 +1,17 @@
+{
+  "name": "pricing-explainer-video",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts PricingExplainer ../public/videos/pricing-explainer.mp4 --codec=h264 --crf=26 && remotion still src/index.ts PricingExplainer ../public/videos/pricing-explainer-poster.jpg --frame=150 --image-format=jpeg"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.534",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.534",
+    "typescript": "^7.0.2"
+  }
+}
