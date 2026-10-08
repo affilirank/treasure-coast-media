@@ -298,16 +298,31 @@ img, video { display: block; max-width: 100%; }
 .real-estate-package-card ul { display: grid; gap: 5px; margin: 2px 0 0; padding-left: 16px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
 .real-estate-package-card > span:last-child { align-self: end; margin-top: auto; color: #63583f; font-size: 12px; font-weight: 750; }
 .real-estate-package-card .production-featured-badge { position: absolute; top: 16px; right: 16px; }
-.turnkey-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.turnkey-card { position: relative; display: grid; align-content: start; gap: 9px; border: 1px solid var(--line); background: white; padding: 18px; color: var(--ink); text-align: left; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
-.turnkey-card:hover, .turnkey-card.is-selected { border-color: #a68653; background: #fbf9f4; }
-.turnkey-card:hover { transform: translateY(-1px); }
-.turnkey-card.is-selected { box-shadow: inset 0 0 0 1px #c5aa7c; }
+.path-chooser { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #c5aa7c; background: #fbf8f0; padding: 14px 16px; }
+.path-chooser > div { display: grid; gap: 4px; }
+.path-chooser strong { font-size: 12px; }
+.path-chooser small { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.path-chooser .button-dark { flex: 0 0 auto; }
 .turnkey-tag { width: fit-content; background: var(--ink); padding: 5px 8px; color: var(--gold-light); font-size: 8px; font-weight: 750; letter-spacing: .08em; }
-.turnkey-card > strong { font-family: var(--font-serif); font-size: 21px; font-weight: 400; line-height: 1.15; }
-.turnkey-price { color: #63583f; font-size: 13px; font-weight: 750; }
-.turnkey-card ul { display: grid; gap: 5px; margin: 0; padding-left: 16px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
-.turnkey-card > small { color: var(--muted); font-size: 9px; line-height: 1.5; }
+.compare-modal { position: relative; width: min(100% - 32px, 1040px); max-height: calc(100vh - 48px); overflow-y: auto; background: white; padding: 34px; }
+.compare-modal h2 { margin: 8px 0 10px; font-family: var(--font-serif); font-size: 30px; font-weight: 400; }
+.compare-intro { max-width: 700px; margin: 0 0 22px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.compare-grid { display: grid; grid-template-columns: .7fr 1fr 1fr; gap: 12px; }
+.compare-card { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; border: 1px solid var(--line); padding: 18px; }
+.compare-card.is-package { background: #fbf9f4; }
+.compare-card.is-selected { border-color: #a68653; }
+.compare-card h3 { margin: 0; font-family: var(--font-serif); font-size: 19px; font-weight: 400; }
+.compare-card p, .compare-card ul { margin: 0; color: var(--ink-soft); font-size: 10px; line-height: 1.55; }
+.compare-card ul { display: grid; gap: 5px; padding-left: 16px; }
+.compare-card li.is-social { color: #63583f; font-weight: 700; }
+.compare-card button { margin-top: auto; }
+.compare-value { display: grid; width: 100%; gap: 5px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 10px; }
+.compare-value > div { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); }
+.compare-value strong { color: var(--ink); }
+.compare-total { border-top: 1px dashed var(--line); padding-top: 5px; }
+.compare-savings { background: #eef7f0; padding: 8px; color: #25613b !important; font-weight: 750; }
+.compare-savings strong { color: #25613b; font-size: 14px; }
+.compare-note { display: block; margin-top: 14px; color: var(--muted); font-size: 9px; }
 .tier-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 21px 0 10px; }
 .tier-heading strong { font-size: 10px; font-weight: 700; }
 .tier-heading span { color: var(--muted); font-size: 9px; }
@@ -645,7 +660,9 @@ img, video { display: block; max-width: 100%; }
 	.tier-grid { grid-template-columns: 1fr 1fr; }
 	.real-estate-package-grid { grid-template-columns: 1fr; }
 	.real-estate-package-card { min-height: auto; }
-	.video-choice-grid, .turnkey-grid { grid-template-columns: 1fr; }
+	.video-choice-grid, .compare-grid { grid-template-columns: 1fr; }
+	.path-chooser { align-items: stretch; flex-direction: column; }
+	.compare-modal { padding: 24px 16px; }
 	.video-choice-card { min-height: 155px; }
 	.tier-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
 	.tier-option { min-height: 86px; }

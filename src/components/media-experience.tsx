@@ -50,6 +50,7 @@ import {
   realEstateAddOns,
   realEstateGallery,
   realEstatePackageList,
+  realEstatePackageValue,
   realEstateRetainers,
   realEstateTiers,
   realEstateVideoOptions,
@@ -803,33 +804,21 @@ function RealEstateCalculator({
   retainers: Record<RealEstateRetainerId, boolean>;
   onRetainerChange: (id: RealEstateRetainerId, selected: boolean) => void;
 }) {
+  const [compareOpen, setCompareOpen] = useState(false);
   const selectedPackage = realEstatePackageList.find((item) => item.id === packageId);
+  const packageSavings = realEstatePackageValue(packageId, tierId);
   const includedAddOns = selectedPackage?.includedAddOns ?? {};
-  const turnkeyPackages = realEstatePackageList.filter((item) => item.turnkey);
   const basePackages = realEstatePackageList.filter((item) => !item.turnkey);
 
   return (
     <div className="calculator">
       <div className="calculator-section turnkey-section">
-        <div className="step-heading"><span className="step-number">★</span><h3>Quick-select turnkey packages</h3></div>
-        <div className="turnkey-grid" role="radiogroup" aria-label="Turnkey packages">
-          {turnkeyPackages.map((item) => (
-            <button
-              type="button"
-              className={`turnkey-card${packageId === item.id ? " is-selected" : ""}`}
-              role="radio"
-              aria-checked={packageId === item.id}
-              key={item.id}
-              onClick={() => onPackageChange(item.id as RealEstatePackageId)}
-            >
-              {item.badge && <span className="turnkey-tag">{item.badge}</span>}
-              <strong>{item.name}</strong>
-              <span className="turnkey-price">{money(item.prices[0])} base</span>
-              <ul>{item.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-              <small>Base covers up to 2,800 SQFT; +$100 for 2,801–3,800; +$200 for 3,801+.</small>
-              <span className="video-choice-status">{packageId === item.id ? "Selected" : "Select package"}</span>
-            </button>
-          ))}
+        <div className="path-chooser">
+          <div>
+            <strong>{selectedPackage?.turnkey ? `Package selected: ${selectedPackage.name}` : "Build à la carte, or save with a turnkey package"}</strong>
+            <small>{selectedPackage?.turnkey && packageSavings ? `Saving ${money(packageSavings.savings)} versus buying the same items à la carte.` : "Compare both options side by side and see exactly what you save."}</small>
+          </div>
+          <button type="button" className="button-dark" onClick={() => setCompareOpen(true)}>Compare options &amp; savings</button>
         </div>
       </div>
       <div className="calculator-section">
@@ -941,6 +930,43 @@ function RealEstateCalculator({
           </ul>
         )}
       </div>
+      {compareOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCompareOpen(false)}>
+          <section className="compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-title">
+            <button className="icon-button lightbox-close" type="button" aria-label="Close comparison" onClick={() => setCompareOpen(false)}><X size={17} /></button>
+            <span className="section-kicker">Two ways to book</span>
+            <h2 id="compare-title">À la carte or turnkey package</h2>
+            <p className="compare-intro">Build exactly what you need à la carte, or choose a turnkey package that bundles media, video, enhancements and a 30-day social campaign for less. Prices shown for {realEstateTiers.find((tier) => tier.id === tierId)?.label}.</p>
+            <div className="compare-grid">
+              <article className="compare-card">
+                <h3>Build À La Carte</h3>
+                <p>Pick a base package, add one video, then choose only the enhancements you want, including the 30-Day Social Post Pack (+{money(realEstateAddOnPrice("social-post-pack"))}) or Premium Social Syndication Engine (+{money(realEstateAddOnPrice("social-syndication-engine"))}).</p>
+                <button type="button" className="button-outline" onClick={() => { if (selectedPackage?.turnkey) onPackageChange("standard-mls-suite"); setCompareOpen(false); }}>Build à la carte</button>
+              </article>
+              {realEstatePackageList.filter((item) => item.turnkey).map((item) => {
+                const value = realEstatePackageValue(item.id, tierId);
+                return (
+                  <article className={`compare-card is-package${packageId === item.id ? " is-selected" : ""}`} key={item.id}>
+                    {item.badge && <span className="turnkey-tag">{item.badge}</span>}
+                    <h3>{item.name}</h3>
+                    <ul>{item.features.map((feature) => <li key={feature} className={/Social/.test(feature) ? "is-social" : undefined}>{feature}</li>)}</ul>
+                    {value && (
+                      <div className="compare-value">
+                        {value.lines.map((line) => <div key={line.label}><span>{line.label}</span><strong>{money(line.amount)}</strong></div>)}
+                        <div className="compare-total"><span>À la carte value</span><strong>{money(value.value)}</strong></div>
+                        <div className="compare-total"><span>Package price</span><strong>{money(value.price)}</strong></div>
+                        <div className="compare-savings"><span>You save</span><strong>{money(value.savings)}</strong></div>
+                      </div>
+                    )}
+                    <button type="button" className="button-primary" onClick={() => { onPackageChange(item.id as RealEstatePackageId); setCompareOpen(false); }}>Select this package</button>
+                  </article>
+                );
+              })}
+            </div>
+            <small className="compare-note">Savings are conservative: expanded photo and drone volume, the 2D floor plan upgrade and priority delivery are not counted.</small>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

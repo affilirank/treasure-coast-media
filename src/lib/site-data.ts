@@ -63,7 +63,7 @@ export const realEstatePackages = [
     badge: "MOST POPULAR · COMPLETE LISTING LAUNCH",
     turnkey: true,
     includedVideoId: "realtor-hosted-branding-reel",
-    includedAddOns: { "zillow-tour": 1, "virtual-twilight": 1, "boundary-outline": 1 },
+    includedAddOns: { "zillow-tour": 1, "virtual-twilight": 1, "boundary-outline": 1, "social-post-pack": 1 },
     features: [
       "Standard Media Suite: ~35 HDR Stills, 5–8 4K Aerials, 2D Schematic Floor Plan",
       "60-Sec Realtor-Hosted Branding Reel (9:16 Vertical + MLS-compliant Cut)",
@@ -81,7 +81,7 @@ export const realEstatePackages = [
     badge: "SIGNATURE LUXURY · WATERFRONT & ACREAGE",
     turnkey: true,
     includedVideoId: "cinematic-showcase-film",
-    includedAddOns: { "amenities-suite": 1, "boundary-outline": 1, "zillow-tour": 1, "virtual-twilight": 1 },
+    includedAddOns: { "amenities-suite": 1, "boundary-outline": 1, "zillow-tour": 1, "virtual-twilight": 1, "social-syndication-engine": 1 },
     features: [
       "Comprehensive Luxury Photo Suite: 50–60+ hand-blended master HDR stills (interiors, architectural details, exterior vignettes)",
       "Expanded 4K Drone Suite: 12–15+ aerials highlighting waterfront access, dock, canals, lot scale, and coastal geography",
@@ -147,9 +147,30 @@ export const realEstateAddOns: RealEstateAddOn[] = [
   { id: "decluttering", label: "Virtual Decluttering / Object Removal", price: 20, unit: "photo" },
   { id: "zillow-tour", label: "Zillow 3D Home Tour + Interactive Floor Plan", price: 85, unit: "property" },
   { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 75, unit: "property" },
+  { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 150, unit: "property", included: "Pre-scheduled via GoHighLevel CSV over 30 days." },
+  { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 395, unit: "property", included: "4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, automated via GHL." },
 ] as const;
 
 export type RealEstateAddOnId = (typeof realEstateAddOns)[number]["id"];
+
+export function realEstatePackageValue(packageId: string, tierId: string) {
+  const pkg = realEstatePackageList.find((item) => item.id === packageId);
+  const tierIndex = realEstateTiers.findIndex((item) => item.id === tierId);
+  if (!pkg?.turnkey || tierIndex < 0) return null;
+  const baseSuite = realEstatePackageList.find((item) => item.id === "standard-mls-suite")!;
+  const video = realEstateVideoOptions.find((item) => item.id === pkg.includedVideoId);
+  const lines = [
+    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex] },
+    ...(video ? [{ label: video.name, amount: video.price }] : []),
+    ...Object.entries(pkg.includedAddOns ?? {}).map(([id, qty]) => {
+      const addOn = realEstateAddOns.find((item) => item.id === id)!;
+      return { label: addOn.label, amount: addOn.price * qty };
+    }),
+  ];
+  const value = lines.reduce((sum, line) => sum + line.amount, 0);
+  const price = pkg.prices[tierIndex];
+  return { lines, value, price, savings: Math.max(0, value - price) };
+}
 
 export function realEstateAddOnPrice(id: RealEstateAddOnId) {
   const addOn = realEstateAddOns.find((item) => item.id === id);
