@@ -25,7 +25,7 @@ export type StoredBooking = {
   appliedPromoCode: string | null;
   discountAmount: number;
   selectedAddOns: QuoteItem[];
-  paymentStatus: "awaiting_payment" | "paid" | "expired";
+  paymentStatus: "awaiting_payment" | "paid" | "confirmed" | "expired";
   stripeCheckoutSessionId: string | null;
   paidAt: string | null;
   confirmationEmailStatus: "pending" | "sent" | "not_configured";

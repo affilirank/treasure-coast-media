@@ -83,7 +83,7 @@ type BookingFields = {
 
 type BookingReceipt = {
   referenceId: string;
-  status: "preview" | "forwarded";
+  status: "preview" | "forwarded" | "confirmed";
   total: number;
   originalTotal?: number;
   discountAmount?: number;
@@ -1286,7 +1286,7 @@ function BookingSection({
                 onApplyPromo();
               }
             }}
-            placeholder="Enter promo or referral code (e.g. FIRST50)"
+            placeholder="Promo or referral code"
             autoComplete="off"
           />
           <button type="button" onClick={onApplyPromo}>Apply Code</button>
@@ -1296,9 +1296,9 @@ function BookingSection({
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="booking-form-footer">
-            <p>A secure Stripe deposit confirms your selected production date. Your receipt and next steps will be emailed after payment.</p>
+            <p>No deposit needed. Pick your date and we’ll confirm it right away by email. You only pay when your finished media is delivered.</p>
             <button className="button-primary" type="submit" disabled={booking || !quote || !values.date || !values.time}>
-              {booking ? "Opening secure checkout…" : "Continue to secure deposit"}<Send size={14} />
+              {booking ? "Booking your shoot…" : "Confirm my shoot date"}<Send size={14} />
             </button>
           </div>
         </form>
@@ -1533,7 +1533,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     if (!resolved) {
       setAppliedPromoCode(null);
       setPromoApplied(false);
-      setPromoMessage("Invalid or expired code. Try FIRST50 for your first shoot.");
+      setPromoMessage("That code is invalid or expired.");
       return;
     }
     setAppliedPromoCode(resolved.code);
@@ -1776,8 +1776,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             <motion.section className="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <button className="icon-button lightbox-close" type="button" aria-label="Close booking summary" onClick={() => setReceipt(null)}><X size={17} /></button>
               <span className="confirmation-icon"><CheckCircle2 size={21} /></span>
-              <h2 id="confirmation-title">{receipt.status === "forwarded" ? "Request received." : "Free consult ready."}</h2>
-              <p>{receipt.status === "forwarded" ? "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm." : "Your itemized request is ready for free review. This demo version does not send live data until a webhook is configured."}</p>
+              <h2 id="confirmation-title">{receipt.status === "confirmed" ? "Your shoot is booked." : receipt.status === "forwarded" ? "Request received." : "Free consult ready."}</h2>
+              <p>{receipt.status === "confirmed" ? "Your date is reserved and a confirmation email is on its way. No deposit is needed. You pay when your finished media is ready for delivery." : receipt.status === "forwarded" ? "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm." : "Your itemized request is ready for free review. This demo version does not send live data until a webhook is configured."}</p>
               <div className="confirmation-summary">
                 <div><span>Reference</span><strong>{receipt.referenceId.slice(0, 8).toUpperCase()}</strong></div>
                 <div><span>Location</span><strong>{receipt.booking.address}</strong></div>

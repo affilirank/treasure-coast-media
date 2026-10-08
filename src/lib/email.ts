@@ -10,6 +10,7 @@ export type BookingEmailInput = {
   date: string;
   time: string;
   track: "real-estate" | "commercial";
+  noDeposit?: boolean;
 };
 
 export async function sendBookingConfirmation(input: BookingEmailInput) {
@@ -23,9 +24,9 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
   const resend = new Resend(apiKey);
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#111827;">
-      <h2 style="margin-bottom:12px;">Your booking deposit is confirmed</h2>
+      <h2 style="margin-bottom:12px;">${input.noDeposit ? "Your shoot is booked" : "Your booking deposit is confirmed"}</h2>
       <p>Hi ${input.name},</p>
-      <p>We received your deposit and your booking is now confirmed. Our production team will contact you to finalize access and timing.</p>
+      <p>${input.noDeposit ? "Your shoot date is reserved. No deposit is needed. You only pay when your finished media is ready for delivery." : "We received your deposit and your booking is now confirmed."} Our production team will contact you to finalize access and timing.</p>
       <p><strong>Reference:</strong> ${input.referenceId}</p>
       <p><strong>Project:</strong> ${input.track === "real-estate" ? "Property media" : "Commercial production"}</p>
       <p><strong>Location:</strong> ${input.address}</p>
@@ -39,7 +40,7 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
   const result = await resend.emails.send({
     from,
     to: [input.to],
-    subject: `Booking deposit confirmed · ${input.referenceId}`,
+    subject: input.noDeposit ? `Shoot booked · ${input.referenceId}` : `Booking deposit confirmed · ${input.referenceId}`,
     html,
   });
 

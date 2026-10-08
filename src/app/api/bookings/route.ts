@@ -1,5 +1,5 @@
-import Stripe from "stripe";
-import { holdSlot, isDateString, isTimeString, releaseSlot } from "@/lib/calendar";
+import { sendBookingConfirmation } from "@/lib/email";
+import { confirmSlot, holdSlot, isDateString, isTimeString, releaseSlot } from "@/lib/calendar";
 import { saveBooking, type StoredBooking } from "@/lib/booking-store";
 import {
   realEstatePackages,
@@ -18,12 +18,6 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function clean(value: unknown, maxLength = 240) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
-}
-
-function getDepositInfo(total: number) {
-  const percent = total >= 5000 ? 0.5 : 0.25;
-  const amount = Math.round(total * percent);
-  return { percent, amount };
 }
 
 export async function POST(request: Request) {
@@ -154,18 +148,13 @@ export async function POST(request: Request) {
   if (!process.env.BLOB_STORE_ID) {
     return Response.json({ error: "Booking storage is not configured yet. Please contact the team directly." }, { status: 503 });
   }
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return Response.json({ error: "Online booking is being configured. Please contact the team directly to reserve a date." }, { status: 503 });
-  }
-  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM_EMAIL === "noreply@localhost") {
-    return Response.json({ error: "Booking confirmation email is not configured yet. Please contact the team directly." }, { status: 503 });
-  }
-
   if (!isDateString(booking.date) || !isTimeString(booking.time)) {
     return Response.json({ error: "Choose an available date and time from the calendar." }, { status: 400 });
   }
 
   const referenceId = crypto.randomUUID();
+  const submittedAt = new Date().toISOString();
+
   try {
     const held = await holdSlot({ referenceId, date: booking.date, time: booking.time, name: booking.name, address: booking.address });
     if (!held) return Response.json({ error: "That time slot is no longer available. Please pick another from the calendar.", code: "slot-unavailable" }, { status: 409 });
@@ -173,80 +162,85 @@ export async function POST(request: Request) {
     return Response.json({ error: "The booking calendar is unavailable right now. Please contact the team directly." }, { status: 503 });
   }
 
-  const submittedAt = new Date().toISOString();
-  const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
-  const { amount, percent } = getDepositInfo(finalPrice);
-  const origin = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin).origin;
-  const successUrl = `${origin}/booking/success?session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${origin}/#booking`;
+  // No deposit: payment happens through the media-delivery paywall, so the booking confirms immediately.
+  const record: StoredBooking = {
+    referenceId,
+    submittedAt,
+    track: track as Track,
+    booking,
+    selection: { ...body.selection, ...bookingBreakdown },
+    items: quote.items,
+    originalTotal,
+    total: finalPrice,
+    recurring: quote.recurring,
+    ...bookingBreakdown,
+    paymentStatus: "confirmed",
+    stripeCheckoutSessionId: null,
+    paidAt: null,
+    confirmationEmailStatus: "pending",
+  };
 
   try {
-    const checkoutSession = await stripeClient.checkout.sessions.create({
-      mode: "payment",
-      customer_email: booking.email,
-      payment_method_types: ["card"],
-      line_items: [{
-        quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: amount * 100,
-          product_data: {
-            name: track === "real-estate" ? "Property media deposit" : "Production deposit",
-            description: `${Math.round(percent * 100)}% deposit for ${track === "real-estate" ? "listing media" : "production services"}`,
-          },
-        },
-      }],
-      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: { referenceId, track },
-      payment_intent_data: { metadata: { referenceId, track } },
-    });
-
-    const record: StoredBooking = {
-      referenceId,
-      submittedAt,
-      track: track as Track,
-      booking,
-      selection: { ...body.selection, ...bookingBreakdown },
-      items: quote.items,
-      originalTotal,
-      total: finalPrice,
-      recurring: quote.recurring,
-      ...bookingBreakdown,
-      paymentStatus: "awaiting_payment",
-      stripeCheckoutSessionId: checkoutSession.id,
-      paidAt: null,
-      confirmationEmailStatus: "pending",
-    };
     await saveBooking(record);
-
-    return Response.json({
-      success: true,
-      referenceId,
-      status: "checkout",
-      checkoutUrl: checkoutSession.url,
-      depositAmount: amount,
-      depositPercent: percent,
-      total: finalPrice,
-      originalTotal,
-      ...bookingBreakdown,
-      recurring: quote.recurring,
-      items: quote.items,
-    }, { status: 201, headers: { "cache-control": "no-store" } });
+    await confirmSlot(referenceId);
   } catch {
-    await releaseSlot(referenceId, true).catch(() => undefined);
-    return Response.json({ error: "Checkout could not be prepared. Please try again or contact the team." }, { status: 502 });
+    await releaseSlot(referenceId).catch(() => undefined);
+    return Response.json({ error: "Your booking could not be saved. Please try again or contact the team." }, { status: 502 });
   }
+
+  let emailStatus: StoredBooking["confirmationEmailStatus"] = "not_configured";
+  try {
+    const email = await sendBookingConfirmation({
+      to: booking.email,
+      name: booking.name,
+      referenceId,
+      total: finalPrice,
+      recurring: quote.recurring,
+      address: booking.address,
+      date: booking.date,
+      time: booking.time,
+      track: track as Track,
+      noDeposit: true,
+    });
+    emailStatus = email.status === "sent" ? "sent" : "not_configured";
+  } catch {
+    emailStatus = "not_configured";
+  }
+  await saveBooking({ ...record, confirmationEmailStatus: emailStatus }).catch(() => undefined);
+
+  const webhookUrl = process.env.BOOKING_WEBHOOK_URL;
+  if (webhookUrl) {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-booking-source": "merit-media-marketing",
+        ...(process.env.BOOKING_WEBHOOK_SECRET ? { "x-booking-secret": process.env.BOOKING_WEBHOOK_SECRET } : {}),
+      },
+      body: JSON.stringify({ event: "booking.confirmed", referenceId, total: finalPrice, booking }),
+      signal: AbortSignal.timeout(10000),
+    }).catch(() => undefined);
+  }
+
+  return Response.json({
+    success: true,
+    referenceId,
+    status: "confirmed",
+    emailStatus,
+    total: finalPrice,
+    originalTotal,
+    ...bookingBreakdown,
+    recurring: quote.recurring,
+    items: quote.items,
+  }, { status: 201, headers: { "cache-control": "no-store" } });
 }
 
 export async function GET() {
   return Response.json({
     service: "Merit Media & Marketing booking API",
-    status: process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET && process.env.BLOB_STORE_ID && process.env.RESEND_API_KEY ? "ready" : "configuration-required",
+    status: process.env.BLOB_STORE_ID ? "ready" : "configuration-required",
     features: [
       "booking-validation",
-      "stripe-deposit-checkout",
       "email-confirmation",
       "customer-photo-delivery",
     ],

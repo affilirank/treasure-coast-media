@@ -18,10 +18,10 @@ export async function GET(request: Request) {
     const records = await Promise.all(entries.map((entry) => getPrivateJson<StoredBooking>(entry.pathname).catch(() => null)));
 
     const bookings = records
-      .filter((record): record is StoredBooking => record !== null && record.track === "real-estate" && record.paymentStatus === "paid")
+      .filter((record): record is StoredBooking => record !== null && record.track === "real-estate" && (record.paymentStatus === "paid" || record.paymentStatus === "confirmed"))
       .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
       .map((record) => {
-        const deposit = depositFor(record.total);
+        const deposit = record.paymentStatus === "confirmed" ? 0 : depositFor(record.total);
         const address = record.booking.address;
         return {
           referenceId: record.referenceId,
