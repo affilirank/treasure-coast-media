@@ -49,8 +49,10 @@ import {
   resolvePromoDiscount,
   realEstateAddOns,
   realEstateGallery,
+  realEstatePackages,
   realEstateRetainers,
   realEstateTiers,
+  realEstateVideoOptions,
   stockImages,
   videoSources,
   type CommercialPackageId,
@@ -58,8 +60,10 @@ import {
   type GalleryItem,
   type QuoteItem,
   type RealEstateAddOnId,
+  type RealEstatePackageId,
   type RealEstateRetainerId,
   type RealEstateTierId,
+  type RealEstateVideoId,
   type Track,
 } from "@/lib/site-data";
 
@@ -401,7 +405,7 @@ function AiPresenterSection({ track, onDiscuss }: { track: Track; onDiscuss: (se
   const videoSource = track === "real-estate" ? videoSources.realtorAiPresenterEmbed : videoSources.commercialAiPresenterEmbed;
   const videoTitle = track === "real-estate" ? "Vero Beach Market Update AI presenter example" : "Commercial AI presenter example";
   return (
-    <section className="section section-paper ai-presenter-section" aria-labelledby="ai-presenter-title">
+    <section className="section section-paper ai-presenter-section" id="ai-presenter" aria-labelledby="ai-presenter-title">
       <div className="shell ai-presenter-grid">
         <div className="ai-presenter-copy">
           <span className="section-kicker">No camera crew required</span>
@@ -679,16 +683,38 @@ function QuoteDrawer({
   onPromoInputChange: (value: string) => void;
   onApplyPromo: () => void;
 }) {
+  const quoteCategories: { id: NonNullable<QuoteItem["category"]>; label: string }[] = [
+    { id: "base-media", label: "Base Media" },
+    { id: "video", label: "Video Choice" },
+    { id: "enhancement", label: "Enhancements" },
+    { id: "retainer", label: "Retainers" },
+  ];
+  const renderQuoteItem = (item: QuoteItem) => (
+    <div className="quote-line" key={item.id}>
+      <span>{item.label}{item.quantity > 1 ? ` × ${item.quantity}` : ""}{item.billing === "monthly" ? " / mo" : ""}{item.detail && <small className="quote-item-detail">{item.detail}</small>}{item.badge && <small className="quote-bundle-badge">{item.badge}</small>}</span>
+      <strong>{money(item.amount)}</strong>
+    </div>
+  );
+
   return (
     <aside className="quote-card" aria-live="polite" aria-label="Live itemized quote">
       <div className="quote-card-head"><span>Live project estimate</span><CircleDollarSign size={18} /></div>
       <div className="quote-items">
-        {quote?.items.map((item) => (
-          <div className="quote-line" key={item.id}>
-            <span>{item.label}{item.quantity > 1 ? ` × ${item.quantity}` : ""}{item.billing === "monthly" ? " / mo" : ""}{item.detail && <small className="quote-item-detail">{item.detail}</small>}{item.badge && <small className="quote-bundle-badge">{item.badge}</small>}</span>
-            <strong>{money(item.amount)}</strong>
-          </div>
-        ))}
+        {track === "real-estate" && quote ? (
+          <>
+            <p className="quote-equation">Base Media + Video Choice + Enhancements + Retainers</p>
+            {quoteCategories.map((category) => {
+              const items = quote.items.filter((item) => item.category === category.id);
+              const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+              return (
+                <section className="quote-group" key={category.id}>
+                  <div className="quote-group-head"><span>{category.label}</span><strong>{money(subtotal)}</strong></div>
+                  {items.length ? items.map(renderQuoteItem) : <small className="quote-group-empty">None selected</small>}
+                </section>
+              );
+            })}
+          </>
+        ) : quote?.items.map(renderQuoteItem)}
         {!quote && <p className="quote-empty">Choose a valid package and options to see your estimate.</p>}
       </div>
       <div className="promo-control">
@@ -755,23 +781,23 @@ function MeritClub() {
 }
 
 function RealEstateCalculator({
+  packageId,
+  onPackageChange,
   tierId,
   onTierChange,
-  includeBasePackage,
-  onIncludeBasePackageChange,
-  photoOnly,
-  onPhotoOnlyChange,
+  videoId,
+  onVideoChange,
   quantities,
   onQuantityChange,
   retainers,
   onRetainerChange,
 }: {
+  packageId: RealEstatePackageId;
+  onPackageChange: (packageId: RealEstatePackageId) => void;
   tierId: RealEstateTierId;
   onTierChange: (tier: RealEstateTierId) => void;
-  includeBasePackage: boolean;
-  onIncludeBasePackageChange: (include: boolean) => void;
-  photoOnly: boolean;
-  onPhotoOnlyChange: (photoOnly: boolean) => void;
+  videoId: RealEstateVideoId;
+  onVideoChange: (videoId: RealEstateVideoId) => void;
   quantities: Record<RealEstateAddOnId, number>;
   onQuantityChange: (id: RealEstateAddOnId, quantity: number) => void;
   retainers: Record<RealEstateRetainerId, boolean>;
@@ -780,35 +806,57 @@ function RealEstateCalculator({
   return (
     <div className="calculator">
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">01</span><h3>Choose the home’s square footage</h3></div>
+        <div className="step-heading"><span className="step-number">01</span><h3>Base property media · Select one</h3></div>
+        <div className="real-estate-package-grid" role="radiogroup" aria-label="Base property media">
+          {realEstatePackages.map((item) => (
+            <button
+              type="button"
+              className={`real-estate-package-card${packageId === item.id ? " is-selected" : ""}`}
+              role="radio"
+              aria-checked={packageId === item.id}
+              key={item.id}
+              onClick={() => onPackageChange(item.id)}
+            >
+              {item.badge && <span className="production-featured-badge">{item.badge}</span>}
+              <strong>{item.name}</strong>
+              <small>{item.target}</small>
+              <ul>{item.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+              <span>From {money(item.prices[0])}</span>
+            </button>
+          ))}
+        </div>
+        <div className="tier-heading"><strong>Choose the home’s square footage</strong><span>Photo-Only Essentials increases by $40 per tier.</span></div>
         <div className="tier-grid" role="radiogroup" aria-label="Property square footage">
           {realEstateTiers.map((tier) => (
             <label className={`tier-option${tierId === tier.id ? " is-selected" : ""}`} key={tier.id}>
-              <input type="radio" name="sqft-tier" value={tier.id} checked={tierId === tier.id} disabled={!includeBasePackage} onChange={() => onTierChange(tier.id)} />
-              <span>{tier.label}<small>{tier.included}</small></span><strong>{money(tier.price)}</strong>
+              <input type="radio" name="sqft-tier" value={tier.id} checked={tierId === tier.id} onChange={() => onTierChange(tier.id)} />
+              <span>{tier.label}</span><strong>{money(realEstatePackages.find((item) => item.id === packageId)?.prices[realEstateTiers.findIndex((item) => item.id === tier.id)] ?? 0)}</strong>
             </label>
           ))}
         </div>
       </div>
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">02</span><h3>Choose the media package</h3></div>
-        <label className="include-base-toggle">
-          <input type="checkbox" checked={includeBasePackage} onChange={(event) => onIncludeBasePackageChange(event.target.checked)} />
-          <span><strong>Include base photo package</strong><small>{includeBasePackage ? "Choose a square-footage tier below." : "Off for standalone video-only pricing."}</small></span>
-        </label>
-        {includeBasePackage ? <div className="package-toggle" role="radiogroup" aria-label="Choose included drone and floor plan">
-          <button type="button" className={`package-choice${!photoOnly ? " is-selected" : ""}`} role="radio" aria-checked={!photoOnly} onClick={() => onPhotoOnlyChange(false)}>
-            <span className="radio-dot" />
-            <span>Standard media<small>Photos + drone + 2D floor plan</small></span>
-          </button>
-          <button type="button" className={`package-choice${photoOnly ? " is-selected" : ""}`} role="radio" aria-checked={photoOnly} onClick={() => onPhotoOnlyChange(true)}>
-            <span className="radio-dot" />
-            <span>Photo-Only Package<small>Opt out of Drone &amp; Floor Plan · −$30</small></span>
-          </button>
-        </div> : <p className="standalone-video-note">Select the Realtor Walkthrough Reel below to create a standalone video quote.</p>}
+        <div className="step-heading"><span className="step-number">02</span><h3>Add video production · Choose one</h3></div>
+        <div className="video-choice-grid" role="radiogroup" aria-label="Video production">
+          {realEstateVideoOptions.map((video) => (
+            <button
+              type="button"
+              className={`video-choice-card${videoId === video.id ? " is-selected" : ""}${video.price === 0 ? " is-no-video" : ""}`}
+              role="radio"
+              aria-checked={videoId === video.id}
+              key={video.id}
+              onClick={() => onVideoChange(video.id)}
+            >
+              <span className="video-choice-price">{video.price === 0 ? "$0" : `+${money(video.price)}`}</span>
+              <strong>{video.name}</strong>
+              <small>{video.detail}</small>
+              <span className="video-choice-status">{videoId === video.id ? "Selected" : "Select video"}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">03</span><h3>Add the details you need</h3></div>
+        <div className="step-heading"><span className="step-number">03</span><h3>Quick utility enhancements</h3></div>
         <div className="addon-list">
           {realEstateAddOns.map((addOn) => {
             const quantity = quantities[addOn.id];
@@ -824,7 +872,7 @@ function RealEstateCalculator({
                     onChange={(event) => onQuantityChange(addOn.id, event.target.checked ? Math.max(quantity, 1) : 0)}
                   />
                   <span className="check-box" aria-hidden="true">{isSelected && <Check size={11} />}</span>
-                  <span><strong>{addOn.label}</strong><small>{money(realEstateAddOnPrice(addOn.id, includeBasePackage))} bundled{includeBasePackage && addOn.price !== realEstateAddOnPrice(addOn.id, includeBasePackage) ? ` · ${money(addOn.price)} standalone` : ` / ${unitLabel}`}</small>{addOn.badge && <small className="retainer-feature-tag">{addOn.badge}</small>}{addOn.included && <small className="addon-included-specs">{addOn.included}</small>}</span>
+                  <span><strong>{addOn.label}</strong><small>{money(realEstateAddOnPrice(addOn.id))} / {unitLabel}</small></span>
                 </label>
                 {(addOn.unit === "photo" || addOn.unit === "room") && isSelected ? (
                   <label className="sr-only" htmlFor={`quantity-${addOn.id}`}>{addOn.label} quantity</label>
@@ -840,7 +888,7 @@ function RealEstateCalculator({
                     aria-label={`${addOn.label} quantity`}
                     onChange={(event) => onQuantityChange(addOn.id, Math.min(40, Math.max(0, Number(event.target.value))))}
                   />
-                ) : <strong className="addon-price">{isSelected ? money(realEstateAddOnPrice(addOn.id, includeBasePackage) * quantity) : "+" + money(realEstateAddOnPrice(addOn.id, includeBasePackage))}</strong>}
+                ) : <strong className="addon-price">{isSelected ? money(realEstateAddOnPrice(addOn.id) * quantity) : "+" + money(realEstateAddOnPrice(addOn.id))}</strong>}
               </div>
             );
           })}
@@ -1051,7 +1099,7 @@ function BookingSection({
           <h2 className="text-display">Let’s make <em>the next one count.</em></h2>
           <p>Share the essentials. We’ll send your itemized scope to our booking workflow and follow up to confirm access and timing.</p>
           <div className="booking-contact-line"><MapPin size={15} />Treasure Coast & Palm Beaches</div>
-          <div className="booking-contact-line"><Mail size={15} /><a href="mailto:hello@youragency.com">hello@youragency.com</a></div>
+          <div className="booking-contact-line"><Mail size={15} /><a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a></div>
         </div>
         <form className="booking-form" onSubmit={onSubmit}>
           {fields.map((field) => (
@@ -1139,7 +1187,7 @@ function SiteFooter({ track }: { track: Track }) {
         </div>
         <div className="footer-column">
           <h3>Start a conversation</h3>
-          <a href="mailto:hello@youragency.com">hello@youragency.com</a>
+          <a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a>
           <a href="#booking">Request a production date</a>
           <a href="/client-portal">Open client portal</a>
           <p>{track === "real-estate" ? "Property media · Listings · Agent growth" : "Brand films · Commercial media · Growth"}</p>
@@ -1170,8 +1218,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [filter, setFilter] = useState("All");
   const [menuOpen, setMenuOpen] = useState(false);
   const [tierId, setTierId] = useState<RealEstateTierId>("under-1800");
-  const [includeBasePackage, setIncludeBasePackage] = useState(true);
-  const [photoOnly, setPhotoOnly] = useState(false);
+  const [realEstatePackageId, setRealEstatePackageId] = useState<RealEstatePackageId>("standard-mls-suite");
+  const [realEstateVideoId, setRealEstateVideoId] = useState<RealEstateVideoId>("no-video");
   const [quantities, setQuantities] = useState<Record<RealEstateAddOnId, number>>(createRealEstateQuantities);
   const [packageId, setPackageId] = useState<CommercialPackageId>("brand-story");
   const [retainers, setRetainers] = useState<Record<CommercialRetainerId, boolean>>(createCommercialRetainers);
@@ -1187,7 +1235,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
   const pricing = track === "real-estate"
-    ? quoteRealEstate(tierId, photoOnly, quantities, Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id), includeBasePackage)
+    ? quoteRealEstate(realEstatePackageId, tierId, quantities, Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id), realEstateVideoId)
     : quoteCommercial(packageId, Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id));
   const oneTimeTotal = pricing?.items.filter((item) => item.billing === "once").reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const recurringTotal = pricing?.recurring ?? 0;
@@ -1196,12 +1244,11 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     : null;
   const discountAmount = promo?.amount ?? 0;
   const selectedTier = realEstateTiers.find((tier) => tier.id === tierId);
-  const basePrice = track === "real-estate" ? (includeBasePackage ? selectedTier?.price ?? 0 : 0) : pricing?.items[0]?.amount ?? 0;
-  const photoOnlyDeduction = track === "real-estate" && includeBasePackage && photoOnly ? 30 : 0;
-  const selectedAddOns = pricing?.items.filter((item) => item.id !== "standard-media-base" && item.id !== "photo-only-base") ?? [];
+  const basePrice = pricing?.items[0]?.amount ?? 0;
+  const selectedAddOns = pricing?.items.slice(1) ?? [];
   const addOnsSubtotal = selectedAddOns.reduce((sum, item) => sum + item.amount, 0);
-  const originalTotal = basePrice - photoOnlyDeduction + addOnsSubtotal;
-  const finalPrice = Math.max(0, (basePrice - photoOnlyDeduction + addOnsSubtotal) - discountAmount);
+  const originalTotal = basePrice + addOnsSubtotal;
+  const finalPrice = Math.max(0, originalTotal - discountAmount);
 
   useEffect(() => {
     if (!selectedGallery && !videoOpen && !receipt) return;
@@ -1299,11 +1346,10 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     setBooking(true);
     const selection = {
       ...(track === "real-estate"
-        ? { tierId, photoOnly, includeBasePackage, quantities, retainerIds: Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id) }
+        ? { packageId: realEstatePackageId, tierId, videoId: realEstateVideoId, quantities, retainerIds: Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id) }
         : { packageId, retainerIds: Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id) }),
       selectedSqftTier: track === "real-estate" ? selectedTier?.label ?? "" : "Commercial production",
       basePrice,
-      isPhotoOnly: track === "real-estate" && photoOnly,
       appliedPromoCode,
       discountAmount,
       finalPrice,
@@ -1408,20 +1454,17 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               <SectionHeading
                 kicker="Clear scope. Clear numbers."
                 title={track === "real-estate" ? <>A better listing starts <em>with the right package.</em></> : <>Choose the production <em>your next stage needs.</em></>}
-                intro={track === "real-estate" ? "Choose the home size, keep the standard drone-and-floor-plan package or add only what makes sense." : "Build a first-month estimate from a clear production tier and the ongoing support you actually need."}
+                intro={track === "real-estate" ? "Start with the property media essentials, then choose professional video as a separate production upgrade. Add utility enhancements and retainers only when they fit your listing." : "Build a first-month estimate from a clear production tier and the ongoing support you actually need."}
               />
               <div className="pricing-layout">
                 {track === "real-estate" ? (
                   <RealEstateCalculator
+                    packageId={realEstatePackageId}
+                    onPackageChange={setRealEstatePackageId}
                     tierId={tierId}
                     onTierChange={setTierId}
-                    includeBasePackage={includeBasePackage}
-                    onIncludeBasePackageChange={(include) => {
-                      setIncludeBasePackage(include);
-                      if (!include) setPhotoOnly(false);
-                    }}
-                    photoOnly={photoOnly}
-                    onPhotoOnlyChange={setPhotoOnly}
+                    videoId={realEstateVideoId}
+                    onVideoChange={setRealEstateVideoId}
                     quantities={quantities}
                     onQuantityChange={updateQuantity}
                     retainers={realEstateRetainersSelected}

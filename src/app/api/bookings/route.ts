@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { saveBooking, type StoredBooking } from "@/lib/booking-store";
 import {
+  realEstatePackages,
   realEstateTiers,
   quoteCommercial,
   quoteRealEstate,
@@ -67,10 +68,10 @@ export async function POST(request: Request) {
 
   if (track === "real-estate") {
     if (
+      typeof body.selection.packageId !== "string" ||
       typeof body.selection.tierId !== "string" ||
-      typeof body.selection.photoOnly !== "boolean" ||
+      typeof body.selection.videoId !== "string" ||
       !isRecord(body.selection.quantities) ||
-      (body.selection.includeBasePackage !== undefined && typeof body.selection.includeBasePackage !== "boolean") ||
       (body.selection.retainerIds !== undefined && (!Array.isArray(body.selection.retainerIds) || !body.selection.retainerIds.every((id) => typeof id === "string")))
     ) {
       return Response.json({ error: "The property media selection is invalid." }, { status: 400 });
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     const retainerIds = Array.isArray(body.selection.retainerIds)
       ? body.selection.retainerIds.filter((id): id is string => typeof id === "string")
       : [];
-    quote = quoteRealEstate(body.selection.tierId, body.selection.photoOnly, quantities, retainerIds, body.selection.includeBasePackage !== false);
+    quote = quoteRealEstate(body.selection.packageId, body.selection.tierId, quantities, retainerIds, body.selection.videoId);
   } else if (track === "commercial") {
     const packageId = body.selection.packageId;
     const retainerIds = body.selection.retainerIds;
@@ -107,18 +108,23 @@ export async function POST(request: Request) {
   const validatedTierId = track === "real-estate" && typeof body.selection.tierId === "string"
     ? body.selection.tierId
     : "";
-  const includeBasePackage = track !== "real-estate" || body.selection.includeBasePackage !== false;
+  const validatedPackageId = track === "real-estate" && typeof body.selection.packageId === "string"
+    ? body.selection.packageId
+    : "";
   const appliedPromoCode = typeof body.selection.appliedPromoCode === "string"
     ? body.selection.appliedPromoCode.trim().toUpperCase()
     : null;
   const basePrice = track === "real-estate"
-    ? (includeBasePackage ? realEstateTiers.find((tier) => tier.id === validatedTierId)?.price ?? 0 : 0)
+    ? (() => {
+      const tierIndex = realEstateTiers.findIndex((tier) => tier.id === validatedTierId);
+      return tierIndex >= 0
+        ? realEstatePackages.find((item) => item.id === validatedPackageId)?.prices[tierIndex] ?? 0
+        : 0;
+    })()
     : quote.items[0]?.amount ?? 0;
-  const isPhotoOnly = track === "real-estate" && includeBasePackage && body.selection.photoOnly === true;
-  const photoOnlyDeduction = isPhotoOnly ? 30 : 0;
-  const selectedAddOns = quote.items.filter((item) => item.id !== "standard-media-base" && item.id !== "photo-only-base");
+  const selectedAddOns = quote.items.slice(1);
   const addOnsSubtotal = selectedAddOns.reduce((sum, item) => sum + item.amount, 0);
-  const originalTotal = basePrice - photoOnlyDeduction + addOnsSubtotal;
+  const originalTotal = basePrice + addOnsSubtotal;
   const oneTimeTotal = quote.items
     .filter((item) => item.billing === "once")
     .reduce((sum, item) => sum + item.amount, 0);
@@ -131,16 +137,13 @@ export async function POST(request: Request) {
   }
 
   const discountAmount = Math.min(promo?.amount ?? 0, originalTotal);
-  const finalPrice = Math.max(0, (basePrice - photoOnlyDeduction + addOnsSubtotal) - discountAmount);
+  const finalPrice = Math.max(0, originalTotal - discountAmount);
   const selectedSqftTier = track === "real-estate"
-    ? includeBasePackage
-      ? realEstateTiers.find((tier) => tier.id === validatedTierId)?.label ?? ""
-      : (body.selection.quantities as JsonRecord)["realtor-walkthrough-reel"] ? "Standalone walkthrough video" : "No base photo package"
+    ? `${realEstatePackages.find((item) => item.id === validatedPackageId)?.name ?? ""} · ${realEstateTiers.find((tier) => tier.id === validatedTierId)?.label ?? ""}`
     : "Commercial production";
   const bookingBreakdown = {
     selectedSqftTier,
     basePrice,
-    isPhotoOnly,
     appliedPromoCode,
     discountAmount,
     finalPrice,

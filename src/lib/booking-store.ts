@@ -22,7 +22,6 @@ export type StoredBooking = {
   recurring: number;
   selectedSqftTier: string;
   basePrice: number;
-  isPhotoOnly: boolean;
   appliedPromoCode: string | null;
   discountAmount: number;
   selectedAddOns: QuoteItem[];

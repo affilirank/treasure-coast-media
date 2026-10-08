@@ -7,6 +7,7 @@ export type QuoteItem = {
   unitPrice: number;
   amount: number;
   billing: "once" | "monthly";
+  category?: "base-media" | "video" | "enhancement" | "retainer";
   badge?: string;
   detail?: string;
 };
@@ -18,14 +19,63 @@ export type Quote = {
 };
 
 export const realEstateTiers = [
-  { id: "under-1800", label: "Up to 1,800 SQFT", price: 225, included: "~25 HDR stills · 5 4K drone aerials · 2D floor plan" },
-  { id: "1801-2800", label: "1,801–2,800 SQFT", price: 275, included: "~35 HDR stills · 5–8 4K drone aerials · 2D floor plan" },
-  { id: "2801-3800", label: "2,801–3,800 SQFT", price: 345, included: "~45 HDR stills · 8 4K drone aerials · 2D floor plan" },
-  { id: "3801-4800", label: "3,801–4,800 SQFT", price: 425, included: "~55 HDR stills · 10 4K drone aerials · 2D floor plan" },
-  { id: "over-4800", label: "4,801+ SQFT / Luxury Waterfront", price: 525, included: "Comprehensive luxury stills · twilight coverage · complete drone suite" },
+  { id: "under-1800", label: "Up to 1,800 SQFT" },
+  { id: "1801-2800", label: "1,801–2,800 SQFT" },
+  { id: "2801-3800", label: "2,801–3,800 SQFT" },
+  { id: "over-3800", label: "3,801+ SQFT" },
 ] as const;
 
 export type RealEstateTierId = (typeof realEstateTiers)[number]["id"];
+
+export const realEstatePackages = [
+  {
+    id: "essentials",
+    name: "Photo-Only Essentials",
+    target: "Next-day HDR interior and exterior stills for a polished listing.",
+    badge: undefined,
+    features: ["Next-Day HDR Interior & Exterior Stills"],
+    prices: [195, 235, 275, 315],
+  },
+  {
+    id: "standard-mls-suite",
+    name: "Full Media Suite (Photos + Drone + 2D Floor Plan)",
+    target: "A complete listing-ready media foundation.",
+    badge: "MOST POPULAR",
+    features: ["HDR Stills", "5–8 4K Aerials", "Laser 2D Schematic Floor Plan"],
+    prices: [275, 345, 425, 525],
+  },
+] as const;
+
+export type RealEstatePackageId = (typeof realEstatePackages)[number]["id"];
+
+export const realEstateVideoOptions = [
+  {
+    id: "no-video",
+    name: "No Video Needed",
+    price: 0,
+    detail: "Photos and selected enhancements only.",
+  },
+  {
+    id: "cinematic-b-roll-reel",
+    name: "60-Sec Cinematic B-Roll Reel (9:16)",
+    price: 325,
+    detail: "High-energy vertical walkthrough, 4K Sony gimbal glides, aerial cuts, and licensed music.",
+  },
+  {
+    id: "realtor-hosted-branding-reel",
+    name: "60-Sec Realtor-Hosted Branding Reel",
+    price: 390,
+    detail: "Agent on-camera hook and outro, wireless audio, animated lower-third branding, kinetic captions, plus an MLS-compliant unbranded cut.",
+  },
+  {
+    id: "cinematic-showcase-film",
+    name: "Up to 2-Minute Cinematic Showcase Film (16:9 + Drone)",
+    price: 645,
+    detail: "Full architectural tour, complete aerial storytelling, unbranded MLS cut, and 4K YouTube/social master.",
+  },
+] as const;
+
+export type RealEstateVideoId = (typeof realEstateVideoOptions)[number]["id"];
 
 export type RealEstateAddOn = {
   id: string;
@@ -37,37 +87,19 @@ export type RealEstateAddOn = {
 };
 
 export const realEstateAddOns: RealEstateAddOn[] = [
-  { id: "cinematic-video", label: "60-sec cinematic walkthrough + drone", price: 150, unit: "property" },
-  { id: "agent-intro", label: "Agent on-camera intro / outro", price: 65, unit: "property" },
-  { id: "boundary-outline", label: "Drone property boundary graphic", price: 25, unit: "property" },
-  { id: "vacant-land", label: "Vacant land aerial package", price: 175, unit: "property" },
-  { id: "amenities", label: "Neighborhood & waterfront suite", price: 55, unit: "property" },
-  { id: "virtual-twilight", label: "Virtual twilight conversion", price: 25, unit: "photo" },
   { id: "virtual-staging", label: "Virtual staging", price: 35, unit: "room" },
+  { id: "virtual-twilight", label: "Virtual twilight conversion", price: 25, unit: "photo" },
   { id: "decluttering", label: "Virtual decluttering / object removal", price: 20, unit: "photo" },
-  { id: "zillow-tour", label: "Zillow 3D Home Tour + floor plan", price: 85, unit: "property" },
-  { id: "rush-delivery", label: "Same-day rush delivery", price: 75, unit: "property" },
-  { id: "property-site", label: "Branded / unbranded property site", price: 25, unit: "property" },
-  { id: "open-house-sprint", label: "Open House Meta Ad Sprint", price: 295, unit: "campaign" },
-  { id: "ai-clone-voice-promo", label: "AI Clone + Voice Promo Video", price: 495, unit: "30-second promo", badge: "Consent-based AI presenter", included: "Approved likeness and voice · scripted offer video · social-ready 9:16 delivery" },
-  { id: "realtor-walkthrough-reel", label: "60-Second Realtor Walkthrough Reel", price: 695, unit: "property", badge: "High-Yield Personal Brand & Listing Asset", included: "Wireless lapel mic audio · 4K Sony gimbal interior glide · 4K aerial cutaways · kinetic captions · licensed music · unbranded MLS link · 9:16 vertical + 16:9 widescreen" },
-  { id: "realtor-walkthrough-2-minute", label: "Up to 2-Minute Realtor Walkthrough Film", price: 995, unit: "property", badge: "Signature Listing Story", included: "Up to 2-minute agent-led narrative · full property journey · 4K interior glide · aerial context · licensed music · MLS and social delivery" },
-  { id: "ai-presenter-90-second", label: "Up to 90-Second AI Presenter Video", price: 695, unit: "up to 90-second promo", badge: "Consent-based AI presenter", included: "Up to 90-second approved likeness and voice video · scripted presenter promo · branded captions · social and landing-page delivery" },
+  { id: "zillow-tour", label: "Zillow 3D Home Tour + Interactive Floor Plan", price: 85, unit: "property" },
+  { id: "boundary-outline", label: "Drone property boundary graphic", price: 25, unit: "property" },
+  { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 75, unit: "property" },
 ] as const;
 
 export type RealEstateAddOnId = (typeof realEstateAddOns)[number]["id"];
 
-const bundledVideoUpgradeIds = new Set<RealEstateAddOnId>([
-  "realtor-walkthrough-reel",
-  "realtor-walkthrough-2-minute",
-  "ai-clone-voice-promo",
-  "ai-presenter-90-second",
-]);
-
-export function realEstateAddOnPrice(id: RealEstateAddOnId, includeBasePackage: boolean) {
+export function realEstateAddOnPrice(id: RealEstateAddOnId) {
   const addOn = realEstateAddOns.find((item) => item.id === id);
-  if (!addOn) return 0;
-  return addOn.price - (includeBasePackage && bundledVideoUpgradeIds.has(id) ? 50 : 0);
+  return addOn?.price ?? 0;
 }
 
 export const commercialPackages = [
@@ -245,39 +277,48 @@ export function money(amount: number) {
 }
 
 export function quoteRealEstate(
+  packageId: string,
   tierId: string,
-  photoOnly: boolean,
   quantities: Record<string, number>,
   retainerIds: string[] = [],
-  includeBasePackage = true,
+  videoId: string = "no-video",
 ): Quote | null {
   const tier = realEstateTiers.find((item) => item.id === tierId);
-  if (!tier) return null;
+  const selectedPackage = realEstatePackages.find((item) => item.id === packageId);
+  const selectedVideo = realEstateVideoOptions.find((item) => item.id === videoId);
+  if (!tier || !selectedPackage || !selectedVideo) return null;
 
   const selectedRetainers = retainerIds.map((id) => realEstateRetainers.find((item) => item.id === id));
   if (selectedRetainers.some((item) => !item)) return null;
-  const standaloneVideoIds = ["realtor-walkthrough-reel", "realtor-walkthrough-2-minute", "ai-presenter-90-second"];
-  const hasStandaloneVideo = standaloneVideoIds.some((id) => (quantities[id] ?? 0) > 0);
-  if (!includeBasePackage && !hasStandaloneVideo && retainerIds.length === 0) return null;
-
-  const base = tier.price - (photoOnly ? 30 : 0);
-  const items: QuoteItem[] = includeBasePackage ? [
+  const tierIndex = realEstateTiers.findIndex((item) => item.id === tier.id);
+  const base = selectedPackage.prices[tierIndex];
+  const items: QuoteItem[] = [
     {
-      id: photoOnly ? "photo-only-base" : "standard-media-base",
-      label: photoOnly ? "Photo-only package" : "Photos, drone + 2D floor plan",
+      id: selectedPackage.id,
+      label: `${selectedPackage.name} · ${tier.label}`,
       quantity: 1,
       unitPrice: base,
       amount: base,
       billing: "once",
+      category: "base-media",
     },
-  ] : [];
+    {
+      id: selectedVideo.id,
+      label: selectedVideo.name,
+      quantity: 1,
+      unitPrice: selectedVideo.price,
+      amount: selectedVideo.price,
+      billing: "once",
+      category: "video",
+      detail: selectedVideo.detail,
+    },
+  ];
 
   for (const addOn of realEstateAddOns) {
     const quantity = quantities[addOn.id] ?? 0;
     if (!Number.isInteger(quantity) || quantity < 0 || quantity > 40) return null;
     if (quantity === 0) continue;
-    const isBundledVideoUpgrade = bundledVideoUpgradeIds.has(addOn.id);
-    const unitPrice = realEstateAddOnPrice(addOn.id, includeBasePackage);
+    const unitPrice = realEstateAddOnPrice(addOn.id);
     items.push({
       id: addOn.id,
       label: addOn.label,
@@ -285,8 +326,7 @@ export function quoteRealEstate(
       unitPrice,
       amount: unitPrice * quantity,
       billing: "once",
-      ...(isBundledVideoUpgrade && includeBasePackage ? { badge: "Bundle Discount: -$50 Applied (Paired with Base Media)" } : {}),
-      ...(isBundledVideoUpgrade ? { detail: addOn.included } : {}),
+      category: "enhancement",
     });
   }
 
@@ -299,10 +339,11 @@ export function quoteRealEstate(
       unitPrice: retainer.price,
       amount: retainer.price,
       billing: retainer.billing,
+      category: "retainer",
     });
   }
 
-  if (includeBasePackage && retainerIds.includes("complete-realtor-growth-partner")) {
+  if (retainerIds.includes("complete-realtor-growth-partner")) {
     const shootCredit = Math.min(225, base);
     items.push({
       id: "realtor-growth-shoot-credit",
@@ -311,6 +352,7 @@ export function quoteRealEstate(
       unitPrice: -shootCredit,
       amount: -shootCredit,
       billing: "once",
+      category: "retainer",
     });
   }
 

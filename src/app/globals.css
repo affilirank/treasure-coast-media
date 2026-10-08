@@ -289,7 +289,19 @@ img, video { display: block; max-width: 100%; }
 .step-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 17px; }
 .step-number { display: grid; width: 23px; height: 23px; place-items: center; border: 1px solid #c9b182; color: #79623e; font-size: 9px; font-weight: 700; }
 .step-heading h3 { margin: 0; font-size: 11px; font-weight: 750; letter-spacing: .015em; }
-.tier-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.real-estate-package-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.real-estate-package-card { position: relative; display: grid; min-height: 228px; align-content: start; gap: 8px; border: 1px solid var(--line); background: white; padding: 17px; color: var(--ink); text-align: left; cursor: pointer; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.real-estate-package-card:hover, .real-estate-package-card.is-selected { border-color: #a68653; background: #fbf9f4; }
+.real-estate-package-card:hover { transform: translateY(-1px); }
+.real-estate-package-card > strong { padding-right: 100px; font-family: var(--font-serif); font-size: 22px; font-weight: 400; line-height: 1.1; }
+.real-estate-package-card > small { min-height: 30px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.real-estate-package-card ul { display: grid; gap: 5px; margin: 2px 0 0; padding-left: 16px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
+.real-estate-package-card > span:last-child { align-self: end; margin-top: auto; color: #63583f; font-size: 12px; font-weight: 750; }
+.real-estate-package-card .production-featured-badge { position: absolute; top: 16px; right: 16px; }
+.tier-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 21px 0 10px; }
+.tier-heading strong { font-size: 10px; font-weight: 700; }
+.tier-heading span { color: var(--muted); font-size: 9px; }
+.tier-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
 .tier-option { position: relative; display: grid; min-height: 102px; align-content: center; gap: 8px; border: 1px solid var(--line); padding: 12px 8px; text-align: center; cursor: pointer; transition: border-color 180ms ease, background 180ms ease; }
 .tier-option:hover, .tier-option.is-selected { border-color: #a68653; background: #fbf9f4; }
 .tier-option:has(input:disabled) { cursor: not-allowed; opacity: .48; }
@@ -311,6 +323,16 @@ img, video { display: block; max-width: 100%; }
 .package-choice.is-selected .radio-dot { border-color: #88704b; background: #88704b; }
 .package-choice span:last-child { display: grid; gap: 3px; font-size: 9px; font-weight: 650; }
 .package-choice small { color: var(--muted); font-size: 8px; font-weight: 450; }
+.video-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.video-choice-card { position: relative; display: grid; min-height: 190px; align-content: start; gap: 10px; border: 1px solid var(--line); background: white; padding: 16px; color: var(--ink); text-align: left; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.video-choice-card:hover, .video-choice-card.is-selected { border-color: #a68653; background: #fbf9f4; }
+.video-choice-card:hover { transform: translateY(-1px); }
+.video-choice-card.is-no-video { background: #f8f9f7; }
+.video-choice-price { color: #63583f; font-size: 11px; font-weight: 750; }
+.video-choice-card > strong { font-family: var(--font-serif); font-size: 17px; font-weight: 400; line-height: 1.2; }
+.video-choice-card > small { color: var(--muted); font-size: 9px; line-height: 1.5; }
+.video-choice-status { align-self: end; margin-top: auto; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.video-choice-card.is-selected .video-choice-status { color: #63583f; }
 .addon-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
 .addon-row { display: flex; min-height: 60px; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid #edf0ed; padding: 9px 0; }
 .calculator-retainers { grid-template-columns: 1fr; }
@@ -329,12 +351,19 @@ img, video { display: block; max-width: 100%; }
 .addon-label .addon-included-specs { max-width: 600px; font-size: 9px; }
 .addon-price { flex: 0 0 auto; color: #63583f; font-size: 12px; font-weight: 700; }
 .addon-quantity { width: 60px; height: 35px; border: 1px solid var(--line); background: white; padding: 0 5px; font-size: 12px; text-align: center; }
+.standalone-media-link { margin: 16px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.standalone-media-link a { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
 .quote-card { position: sticky; top: 78px; border: 1px solid #273632; background: #182320; color: white; }
 .quote-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgb(255 255 255 / 15%); padding: 20px 22px; }
 .quote-card-head span { color: var(--gold-light); font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .quote-card-head svg { color: var(--gold-light); }
 .quote-items { display: grid; gap: 12px; padding: 19px 22px; }
+.quote-equation { margin: 0; color: var(--gold-light); font-size: 8px; font-weight: 700; letter-spacing: .06em; line-height: 1.5; text-transform: uppercase; }
+.quote-group { display: grid; gap: 9px; border-top: 1px solid rgb(255 255 255 / 13%); padding-top: 11px; }
+.quote-group-head { display: flex; justify-content: space-between; gap: 14px; color: white; font-size: 9px; font-weight: 700; }
+.quote-group-head strong { color: var(--gold-light); font-size: 9px; }
+.quote-group-empty { color: rgb(255 255 255 / 45%); font-size: 8px; }
 .quote-line { display: flex; align-items: start; justify-content: space-between; gap: 18px; color: rgb(255 255 255 / 76%); font-size: 9px; line-height: 1.55; }
 .quote-line strong { flex: 0 0 auto; color: white; font-size: 9px; font-weight: 650; }
 .quote-item-detail, .quote-bundle-badge { display: block; margin-top: 6px; font-size: 9px; line-height: 1.5; }
@@ -604,6 +633,11 @@ img, video { display: block; max-width: 100%; }
 	.service-detail { margin: 14px 0 0 41px; }
 	.service-detail p { font-size: 12px; }
 	.tier-grid { grid-template-columns: 1fr 1fr; }
+	.real-estate-package-grid { grid-template-columns: 1fr; }
+	.real-estate-package-card { min-height: auto; }
+	.video-choice-grid { grid-template-columns: 1fr; }
+	.video-choice-card { min-height: 155px; }
+	.tier-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
 	.tier-option { min-height: 86px; }
 	.merit-rewards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.merit-reward:nth-child(2) { border-right: 0; }
