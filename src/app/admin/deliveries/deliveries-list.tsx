@@ -44,6 +44,7 @@ export default function DeliveriesList() {
     <main className="mx-auto max-w-5xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Deliveries</h1>
+        <Link href="/admin/calendar" className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800">Booking calendar</Link>
         <Link href="/admin/deliveries/new" className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-amber-200">+ New Delivery</Link>
       </div>
       <p className="mb-4 text-sm text-neutral-600">Unpaid deliveries are reminded automatically 2 days after creation, then every 3 days, up to 3 reminders.</p>

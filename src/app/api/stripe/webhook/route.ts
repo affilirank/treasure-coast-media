@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { loadBooking, saveBooking } from "@/lib/booking-store";
+import { confirmSlot, releaseSlot } from "@/lib/calendar";
 import { sendBookingConfirmation } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.expired") {
       if (booking.paymentStatus !== "paid") {
         await saveBooking({ ...booking, paymentStatus: "expired", stripeCheckoutSessionId: session.id });
+        await releaseSlot(referenceId, true);
       }
       return Response.json({ received: true });
     }
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
       paidAt: booking.paidAt ?? new Date().toISOString(),
     };
     await saveBooking(paidBooking);
+    await confirmSlot(referenceId, { referenceId, date: booking.booking.date, time: booking.booking.time, name: booking.booking.name, address: booking.booking.address });
 
     const email = await sendBookingConfirmation({
       to: booking.booking.email,

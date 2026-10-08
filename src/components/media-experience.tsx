@@ -381,23 +381,11 @@ function RealEstateVideo() {
         <SectionHeading
           kicker="More than a room-by-room tour"
           title={<>A listing with <em>its own point of view.</em></>}
-          intro="Two agent-led coastal walkthroughs, ready to play without extra overlays or controls." 
+          intro="Two agent-led coastal walkthroughs, silent looping previews with no overlays or controls." 
         />
         <div className="walkthrough-pair">
-          <iframe
-            className="walkthrough-embed"
-            src={`${videoSources.propertyTourEmbed}?autoplay=1&muted=1`}
-            title="Golden Hour Luxury Mansion Tour"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
-          <iframe
-            className="walkthrough-embed"
-            src={`${videoSources.propertyTourSecondEmbed}?autoplay=1&muted=1`}
-            title="Golden Hour Coastal Luxury"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
+          <video className="walkthrough-embed" src="/videos/walkthrough-1.mp4" autoPlay loop muted playsInline preload="metadata" aria-label="Golden Hour Luxury Mansion Tour (silent preview)" />
+          <video className="walkthrough-embed" src="/videos/walkthrough-2.mp4" autoPlay loop muted playsInline preload="metadata" aria-label="Golden Hour Coastal Luxury (silent preview)" />
         </div>
       </div>
     </section>
@@ -703,11 +691,6 @@ function QuoteDrawer({
   booking,
   originalTotal,
   discountAmount,
-  promoInput,
-  promoMessage,
-  promoApplied,
-  onPromoInputChange,
-  onApplyPromo,
 }: {
   quote: ReturnType<typeof quoteRealEstate>;
   track: Track;
@@ -715,11 +698,6 @@ function QuoteDrawer({
   booking: boolean;
   originalTotal: number;
   discountAmount: number;
-  promoInput: string;
-  promoMessage: string;
-  promoApplied: boolean;
-  onPromoInputChange: (value: string) => void;
-  onApplyPromo: () => void;
 }) {
   const quoteCategories: { id: NonNullable<QuoteItem["category"]>; label: string }[] = [
     { id: "base-media", label: "Selected Package / Base Media" },
@@ -755,27 +733,8 @@ function QuoteDrawer({
         ) : quote?.items.map(renderQuoteItem)}
         {!quote && <p className="quote-empty">Choose a valid package and options to see your estimate.</p>}
       </div>
-      <div className="promo-control">
-        <label className="sr-only" htmlFor="promo-code">Promo or referral code</label>
-        <div className="promo-input-row">
-          <input
-            id="promo-code"
-            value={promoInput}
-            onChange={(event) => onPromoInputChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onApplyPromo();
-              }
-            }}
-            placeholder="Enter promo or referral code (e.g. FIRST50)"
-            autoComplete="off"
-          />
-          <button type="button" onClick={onApplyPromo}>Apply Code</button>
-        </div>
-        {promoMessage && <p className={`promo-message${promoApplied ? " is-success" : " is-error"}`} role="status">{promoApplied ? "✓ " : ""}{promoMessage}</p>}
-      </div>
       {track === "real-estate" && quote && quote.savings > 0 && <div className="quote-savings"><span>You save vs. regular pricing</span><strong>{money(quote.savings)}</strong></div>}
+      {discountAmount > 0 && <div className="quote-savings"><span>Promo applied at booking</span><strong>−{money(discountAmount)}</strong></div>}
       <div className="quote-total">
         <span>{track === "commercial" ? "Project + first month" : "Estimated total"}</span>
         <strong>{discountAmount > 0 && <del>{money(originalTotal)}</del>}{money(Math.max(0, originalTotal - discountAmount))}</strong>
@@ -1172,6 +1131,73 @@ function ProductionWorkflow({ track }: { track: Track }) {
   );
 }
 
+type AvailabilityDay = { date: string; slots: string[] };
+
+function formatSlotTime(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
+}
+
+function SlotPicker({ date, time, onPick, refreshKey }: { date: string; time: string; onPick: (date: string, time: string) => void; refreshKey: string }) {
+  const [days, setDays] = useState<AvailabilityDay[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [monthIndex, setMonthIndex] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/availability", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("unavailable"))))
+      .then((result: { days: AvailabilityDay[] }) => {
+        if (cancelled) return;
+        setDays(result.days);
+        setFailed(false);
+      })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  if (failed) return <p className="form-error" role="alert">The booking calendar could not be loaded. Please refresh or email hello@meritmediafl.com.</p>;
+  if (!days) return <p className="slot-picker-note">Loading live availability…</p>;
+
+  const months = [...new Set(days.map((day) => day.date.slice(0, 7)))];
+  const month = months[Math.min(monthIndex, months.length - 1)];
+  const monthDays = days.filter((day) => day.date.startsWith(month));
+  const leading = new Date(`${monthDays[0].date}T00:00:00Z`).getUTCDay();
+  const selectedDay = days.find((day) => day.date === date);
+  const monthLabel = new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
+  return (
+    <div className="slot-picker">
+      <div className="slot-picker-head">
+        <button type="button" aria-label="Previous month" disabled={monthIndex === 0} onClick={() => setMonthIndex((value) => value - 1)}>‹</button>
+        <strong>{monthLabel}</strong>
+        <button type="button" aria-label="Next month" disabled={monthIndex >= months.length - 1} onClick={() => setMonthIndex((value) => value + 1)}>›</button>
+      </div>
+      <div className="slot-grid" role="grid" aria-label="Available shoot dates">
+        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((label) => <span className="slot-weekday" key={label}>{label}</span>)}
+        {Array.from({ length: leading }, (_, index) => <span key={`blank-${index}`} />)}
+        {monthDays.map((day) => (
+          <button
+            type="button"
+            key={day.date}
+            className={`slot-day${day.date === date ? " is-selected" : ""}`}
+            disabled={day.slots.length === 0}
+            aria-pressed={day.date === date}
+            onClick={() => onPick(day.date, day.slots.includes(time) ? time : "")}
+          >{Number(day.date.slice(8))}</button>
+        ))}
+      </div>
+      {selectedDay ? (
+        <div className="slot-times" role="group" aria-label="Available arrival times">
+          {selectedDay.slots.map((slot) => (
+            <button type="button" key={slot} className={`slot-time${slot === time ? " is-selected" : ""}`} aria-pressed={slot === time} onClick={() => onPick(selectedDay.date, slot)}>{formatSlotTime(slot)}</button>
+          ))}
+        </div>
+      ) : <p className="slot-picker-note">Select a highlighted date to see open arrival times (Eastern Time).</p>}
+    </div>
+  );
+}
+
 function BookingSection({
   track,
   quote,
@@ -1180,7 +1206,17 @@ function BookingSection({
   onBookingChange,
   onSubmit,
   error,
+  promoInput,
+  promoMessage,
+  promoApplied,
+  onPromoInputChange,
+  onApplyPromo,
 }: {
+  promoInput: string;
+  promoMessage: string;
+  promoApplied: boolean;
+  onPromoInputChange: (value: string) => void;
+  onApplyPromo: () => void;
   track: Track;
   quote: ReturnType<typeof quoteRealEstate>;
   booking: boolean;
@@ -1191,8 +1227,6 @@ function BookingSection({
 }) {
   const fields: { id: keyof BookingFields; label: string; type: string; placeholder: string; required?: boolean }[] = [
     { id: "address", label: track === "real-estate" ? "Property address" : "Business name & location", type: "text", placeholder: "Street, city, ZIP", required: true },
-    { id: "date", label: "Preferred shoot date", type: "date", placeholder: "", required: true },
-    { id: "time", label: "Preferred arrival time", type: "time", placeholder: "", required: true },
     { id: "name", label: "Your name", type: "text", placeholder: "Full name", required: true },
     { id: "email", label: "Email address", type: "email", placeholder: "you@company.com", required: true },
     { id: "phone", label: "Phone number", type: "tel", placeholder: "(772) 555-0100", required: true },
@@ -1210,6 +1244,16 @@ function BookingSection({
           <div className="booking-contact-line"><Mail size={15} /><a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a></div>
         </div>
         <form className="booking-form" onSubmit={onSubmit}>
+          <div className="form-field is-wide">
+            <label>Shoot date &amp; arrival time *</label>
+            <SlotPicker
+              date={values.date}
+              time={values.time}
+              refreshKey={error}
+              onPick={(pickedDate, pickedTime) => { onBookingChange("date", pickedDate); onBookingChange("time", pickedTime); }}
+            />
+            {values.date && values.time && <p className="slot-picker-note is-confirmed">Selected: {values.date} at {formatSlotTime(values.time)}</p>}
+          </div>
           {fields.map((field) => (
             <div className={`form-field${field.id === "address" || field.id === "company" ? " is-wide" : ""}`} key={field.id}>
               <label htmlFor={`booking-${field.id}`}>{field.label}{field.required ? " *" : ""}</label>
@@ -1228,10 +1272,32 @@ function BookingSection({
             <label htmlFor="booking-accessNotes">Gate code, access details or notes</label>
             <textarea id="booking-accessNotes" name="accessNotes" value={values.accessNotes} placeholder="Optional details for the production team" onChange={(event) => onBookingChange("accessNotes", event.target.value)} />
           </div>
+          <div className="form-field is-wide">
+      <div className="promo-control">
+        <label className="sr-only" htmlFor="promo-code">Promo or referral code</label>
+        <div className="promo-input-row">
+          <input
+            id="promo-code"
+            value={promoInput}
+            onChange={(event) => onPromoInputChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onApplyPromo();
+              }
+            }}
+            placeholder="Enter promo or referral code (e.g. FIRST50)"
+            autoComplete="off"
+          />
+          <button type="button" onClick={onApplyPromo}>Apply Code</button>
+        </div>
+        {promoMessage && <p className={`promo-message${promoApplied ? " is-success" : " is-error"}`} role="status">{promoApplied ? "✓ " : ""}{promoMessage}</p>}
+      </div>
+          </div>
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="booking-form-footer">
             <p>A secure Stripe deposit confirms your selected production date. Your receipt and next steps will be emailed after payment.</p>
-            <button className="button-primary" type="submit" disabled={booking || !quote}>
+            <button className="button-primary" type="submit" disabled={booking || !quote || !values.date || !values.time}>
               {booking ? "Opening secure checkout…" : "Continue to secure deposit"}<Send size={14} />
             </button>
           </div>
@@ -1569,11 +1635,6 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               booking={booking}
               originalTotal={originalTotal}
               discountAmount={discountAmount}
-              promoInput={promoInput}
-              promoMessage={promoApplied && !promo ? "" : promoMessage}
-              promoApplied={promoApplied && Boolean(promo)}
-              onPromoInputChange={setPromoInput}
-              onApplyPromo={applyPromoCode}
             />
           </div>
           {track === "real-estate" && <MeritClub />}
@@ -1668,6 +1729,11 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             onBookingChange={updateBookingField}
             onSubmit={submitBooking}
             error={bookingError}
+            promoInput={promoInput}
+            promoMessage={promoApplied && !promo ? "" : promoMessage}
+            promoApplied={promoApplied && Boolean(promo)}
+            onPromoInputChange={setPromoInput}
+            onApplyPromo={applyPromoCode}
           />
           <FaqSection track={track} />
           <SiteFooter track={track} />

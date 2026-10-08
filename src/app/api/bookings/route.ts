@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { holdSlot, isDateString, isTimeString, releaseSlot } from "@/lib/calendar";
 import { saveBooking, type StoredBooking } from "@/lib/booking-store";
 import {
   realEstatePackages,
@@ -160,7 +161,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Booking confirmation email is not configured yet. Please contact the team directly." }, { status: 503 });
   }
 
+  if (!isDateString(booking.date) || !isTimeString(booking.time)) {
+    return Response.json({ error: "Choose an available date and time from the calendar." }, { status: 400 });
+  }
+
   const referenceId = crypto.randomUUID();
+  try {
+    const held = await holdSlot({ referenceId, date: booking.date, time: booking.time, name: booking.name, address: booking.address });
+    if (!held) return Response.json({ error: "That time slot is no longer available. Please pick another from the calendar.", code: "slot-unavailable" }, { status: 409 });
+  } catch {
+    return Response.json({ error: "The booking calendar is unavailable right now. Please contact the team directly." }, { status: 503 });
+  }
+
   const submittedAt = new Date().toISOString();
   const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
   const { amount, percent } = getDepositInfo(finalPrice);
@@ -184,6 +196,7 @@ export async function POST(request: Request) {
           },
         },
       }],
+      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: { referenceId, track },
@@ -222,6 +235,7 @@ export async function POST(request: Request) {
       items: quote.items,
     }, { status: 201, headers: { "cache-control": "no-store" } });
   } catch {
+    await releaseSlot(referenceId, true).catch(() => undefined);
     return Response.json({ error: "Checkout could not be prepared. Please try again or contact the team." }, { status: 502 });
   }
 }
