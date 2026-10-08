@@ -147,8 +147,8 @@ export const realEstateAddOns: RealEstateAddOn[] = [
   { id: "decluttering", label: "Virtual Decluttering / Object Removal", price: 20, unit: "photo" },
   { id: "zillow-tour", label: "Zillow 3D Home Tour + Interactive Floor Plan", price: 85, unit: "property" },
   { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 75, unit: "property" },
-  { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 150, unit: "property", included: "Pre-scheduled via GoHighLevel CSV over 30 days." },
-  { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 395, unit: "property", included: "4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, automated via GHL." },
+  { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 125, unit: "property", included: "Pre-scheduled via GoHighLevel CSV over 30 days." },
+  { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 250, unit: "property", included: "4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, automated via GHL." },
 ] as const;
 
 export type RealEstateAddOnId = (typeof realEstateAddOns)[number]["id"];
