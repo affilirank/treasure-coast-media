@@ -53,7 +53,6 @@ import {
   realEstatePackageValue,
   realEstateRetainers,
   realEstateTiers,
-  realEstateVideoOptions,
   stockImages,
   videoSources,
   type CommercialPackageId,
@@ -66,6 +65,9 @@ import {
   type RealEstateTierId,
   type RealEstateVideoId,
   type Track,
+  regularPrice,
+  regularVideoPrice,
+  videoOptionList,
 } from "@/lib/site-data";
 
 type BookingFields = {
@@ -402,7 +404,7 @@ function RealEstateVideo() {
   );
 }
 
-function AiPresenterSection({ track, onDiscuss }: { track: Track; onDiscuss: (service: string) => void }) {
+function AiPresenterSection({ track, onAddToQuote }: { track: Track; onAddToQuote: (length: 30 | 90) => void }) {
   const videoSource = track === "real-estate" ? videoSources.realtorAiPresenterEmbed : videoSources.commercialAiPresenterEmbed;
   const videoTitle = track === "real-estate" ? "Vero Beach Market Update AI presenter example" : "Commercial AI presenter example";
   return (
@@ -419,7 +421,11 @@ function AiPresenterSection({ track, onDiscuss }: { track: Track; onDiscuss: (se
             <li>Approved likeness and voice use only, with written consent</li>
             <li>Vertical 9:16 social delivery ready for paid or organic campaigns</li>
           </ul>
-          <button className="button-dark" type="button" onClick={() => onDiscuss("AI Clone + Voice Promo Video · $495 / 30 seconds or $695 / up to 90 seconds")}>Create my promo <ArrowUpRight size={15} /></button>
+          <div className="ai-presenter-actions">
+            <button className="button-dark" type="button" onClick={() => onAddToQuote(30)}>Add 30-sec promo · $495 <ArrowUpRight size={15} /></button>
+            <button className="button-outline" type="button" onClick={() => onAddToQuote(90)}>Add 90-sec promo · $695 <ArrowUpRight size={15} /></button>
+          </div>
+          <small className="ai-presenter-note">Added to your live quote. Checkout the same way as any other service.</small>
         </div>
         <div className="ai-presenter-video">
           <iframe
@@ -659,6 +665,37 @@ function ServicesSection({
   );
 }
 
+function PriceTag({ price, regular, prefix = "", suffix = "" }: { price: number; regular?: number; prefix?: string; suffix?: string }) {
+  return (
+    <span className="price-reveal">
+      {regular !== undefined && regular > price && <del className="price-reveal-regular">{prefix}{money(regular)}</del>}
+      <strong className="price-reveal-now">{prefix}{money(price)}{suffix}</strong>
+    </span>
+  );
+}
+
+function PricingGateway({ savings, onClose, onChoose }: { savings: number; onClose: () => void; onChoose: (path: "a-la-carte" | "package") => void }) {
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="gateway-modal" role="dialog" aria-modal="true" aria-labelledby="gateway-title">
+        <button className="icon-button lightbox-close" type="button" aria-label="Close" onClick={onClose}><X size={17} /></button>
+        <div className="gateway-video">
+          <video src="/videos/pricing-explainer.mp4" poster="/videos/pricing-explainer-poster.jpg" controls autoPlay muted playsInline preload="metadata" />
+        </div>
+        <div className="gateway-body">
+          <span className="section-kicker">Before you build your quote</span>
+          <h2 id="gateway-title">Two ways to book. <em>Packages save up to {money(savings)}.</em></h2>
+          <p>Build à la carte with exactly the video and enhancements you want, or pick a turnkey package that bundles media, video and a 30-day social campaign at a lower price. Every price shows its regular rate crossed out.</p>
+          <div className="gateway-actions">
+            <button type="button" className="button-outline" onClick={() => onChoose("a-la-carte")}>Build à la carte</button>
+            <button type="button" className="button-primary" onClick={() => onChoose("package")}>Choose a turnkey package <ArrowUpRight size={15} /></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function QuoteDrawer({
   quote,
   track,
@@ -693,7 +730,7 @@ function QuoteDrawer({
   const renderQuoteItem = (item: QuoteItem) => (
     <div className="quote-line" key={item.id}>
       <span>{item.label}{item.quantity > 1 ? ` × ${item.quantity}` : ""}{item.billing === "monthly" ? " / mo" : ""}{item.detail && <small className="quote-item-detail">{item.detail}</small>}{item.badge && <small className="quote-bundle-badge">{item.badge}</small>}</span>
-      <strong>{money(item.amount)}</strong>
+      <strong>{item.regularAmount !== undefined && item.regularAmount > item.amount && <del className="quote-regular">{money(item.regularAmount)}</del>}{money(item.amount)}</strong>
     </div>
   );
 
@@ -738,6 +775,7 @@ function QuoteDrawer({
         </div>
         {promoMessage && <p className={`promo-message${promoApplied ? " is-success" : " is-error"}`} role="status">{promoApplied ? "✓ " : ""}{promoMessage}</p>}
       </div>
+      {track === "real-estate" && quote && quote.savings > 0 && <div className="quote-savings"><span>You save vs. regular pricing</span><strong>{money(quote.savings)}</strong></div>}
       <div className="quote-total">
         <span>{track === "commercial" ? "Project + first month" : "Estimated total"}</span>
         <strong>{discountAmount > 0 && <del>{money(originalTotal)}</del>}{money(Math.max(0, originalTotal - discountAmount))}</strong>
@@ -792,7 +830,9 @@ function RealEstateCalculator({
   onQuantityChange,
   retainers,
   onRetainerChange,
+  onOpenGateway,
 }: {
+  onOpenGateway: () => void;
   packageId: RealEstatePackageId;
   onPackageChange: (packageId: RealEstatePackageId) => void;
   tierId: RealEstateTierId;
@@ -804,22 +844,35 @@ function RealEstateCalculator({
   retainers: Record<RealEstateRetainerId, boolean>;
   onRetainerChange: (id: RealEstateRetainerId, selected: boolean) => void;
 }) {
-  const [compareOpen, setCompareOpen] = useState(false);
   const selectedPackage = realEstatePackageList.find((item) => item.id === packageId);
-  const packageSavings = realEstatePackageValue(packageId, tierId);
   const includedAddOns = selectedPackage?.includedAddOns ?? {};
   const basePackages = realEstatePackageList.filter((item) => !item.turnkey);
+  const turnkeyPackages = realEstatePackageList.filter((item) => item.turnkey);
+  const aLaCarte = !selectedPackage?.turnkey;
+  const cameraVideos = videoOptionList.filter((video) => !video.ai);
+  const aiVideos = videoOptionList.filter((video) => video.ai);
+  const tierIndex = realEstateTiers.findIndex((item) => item.id === tierId);
+  const renderVideoCard = (video: (typeof videoOptionList)[number]) => (
+    <button
+      type="button"
+      className={`video-choice-card${videoId === video.id ? " is-selected" : ""}${video.price === 0 ? " is-no-video" : ""}`}
+      role="radio"
+      aria-checked={videoId === video.id}
+      key={video.id}
+      onClick={() => onVideoChange(video.id as RealEstateVideoId)}
+    >
+      <span className="video-choice-price">{video.price === 0 ? "$0" : <PriceTag price={video.price} regular={regularVideoPrice(video.price)} prefix="+" />}</span>
+      <strong>{video.name}</strong>
+      <small>{video.detail}</small>
+      <span className="video-choice-status">{videoId === video.id ? "Selected" : "Select video"}</span>
+    </button>
+  );
 
   return (
     <div className="calculator">
-      <div className="calculator-section turnkey-section">
-        <div className="path-chooser">
-          <div>
-            <strong>{selectedPackage?.turnkey ? `Package selected: ${selectedPackage.name}` : "Build à la carte, or save with a turnkey package"}</strong>
-            <small>{selectedPackage?.turnkey && packageSavings ? `Saving ${money(packageSavings.savings)} versus buying the same items à la carte.` : "Compare both options side by side and see exactly what you save."}</small>
-          </div>
-          <button type="button" className="button-dark" onClick={() => setCompareOpen(true)}>Compare options &amp; savings</button>
-        </div>
+      <div className="calculator-guide">
+        <span>New here? See how à la carte and turnkey packages compare.</span>
+        <button type="button" className="button-dark" onClick={onOpenGateway}>Watch the 30-second guide</button>
       </div>
       <div className="calculator-section">
         <div className="step-heading"><span className="step-number">01</span><h3>Base property media · Select one</h3></div>
@@ -837,7 +890,7 @@ function RealEstateCalculator({
               <strong>{item.name}</strong>
               <small>{item.target}</small>
               <ul>{item.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-              <span>From {money(item.prices[0])}</span>
+              <span>From <PriceTag price={item.prices[0]} regular={regularPrice(item.prices[0])} /></span>
             </button>
           ))}
         </div>
@@ -851,28 +904,65 @@ function RealEstateCalculator({
           ))}
         </div>
       </div>
+      <div className="calculator-section turnkey-section">
+        <div className="step-heading"><span className="step-number">02</span><h3>Turnkey packages · Bundle &amp; save</h3></div>
+        <div className="alacarte-toggle">
+          <div>
+            <strong>À la carte options</strong>
+            <small>{aLaCarte ? "On. Build your own video and enhancements below." : "Off. Everything you need is included in your package."}</small>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={aLaCarte}
+            aria-label="À la carte options"
+            className={`switch${aLaCarte ? " is-on" : ""}`}
+            onClick={() => onPackageChange(aLaCarte ? "complete-showcase-suite" : "standard-mls-suite")}
+          ><span /></button>
+        </div>
+        <div className="turnkey-grid" role="radiogroup" aria-label="Turnkey packages">
+          {turnkeyPackages.map((item) => {
+            const value = realEstatePackageValue(item.id, tierId);
+            return (
+              <button
+                type="button"
+                className={`turnkey-card${packageId === item.id ? " is-selected" : ""}`}
+                role="radio"
+                aria-checked={packageId === item.id}
+                key={item.id}
+                onClick={() => onPackageChange(item.id as RealEstatePackageId)}
+              >
+                {item.badge && <span className="turnkey-tag">{item.badge}</span>}
+                <strong>{item.name}</strong>
+                <small>{item.target}</small>
+                <ul>{item.features.map((feature) => <li key={feature} className={/Social/.test(feature) ? "is-social" : undefined}>{feature}</li>)}</ul>
+                <span className="turnkey-price"><PriceTag key={tierId} price={item.prices[tierIndex]} regular={value?.regularValue} /></span>
+                {value && value.savings > 0 && <span className="turnkey-savings">Save {money(value.savings)}</span>}
+                <span className="video-choice-status">{packageId === item.id ? "Selected" : "Select package"}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {aLaCarte && (
+      <>
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">02</span><h3>Add video production · Choose one</h3></div>
+        <div className="step-heading"><span className="step-number">03</span><h3>Add video production · Choose one</h3></div>
         <div className="video-choice-grid" role="radiogroup" aria-label="Video production">
-          {realEstateVideoOptions.map((video) => (
-            <button
-              type="button"
-              className={`video-choice-card${videoId === video.id ? " is-selected" : ""}${video.price === 0 ? " is-no-video" : ""}`}
-              role="radio"
-              aria-checked={videoId === video.id}
-              key={video.id}
-              onClick={() => onVideoChange(video.id)}
-            >
-              <span className="video-choice-price">{video.price === 0 ? "$0" : selectedPackage?.includedVideoId === video.id ? "Included" : `+${money(video.price)}`}</span>
-              <strong>{video.name}</strong>
-              <small>{video.detail}</small>
-              <span className="video-choice-status">{videoId === video.id ? "Selected" : "Select video"}</span>
-            </button>
-          ))}
+          {cameraVideos.map(renderVideoCard)}
+        </div>
+        <div className="ai-video-group">
+          <a className="ai-video-prompt" href="#ai-presenter">
+            <strong>Not good on camera? Click here</strong>
+            <small>Learn how an AI Presenter can host your video, or pick one below.</small>
+          </a>
+          <div className="video-choice-grid" role="radiogroup" aria-label="AI presenter video">
+            {aiVideos.map(renderVideoCard)}
+          </div>
         </div>
       </div>
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">03</span><h3>Quick utility enhancements</h3></div>
+        <div className="step-heading"><span className="step-number">04</span><h3>Quick utility enhancements</h3></div>
         <div className="addon-list">
           {realEstateAddOns.map((addOn) => {
             const quantity = quantities[addOn.id];
@@ -888,7 +978,7 @@ function RealEstateCalculator({
                     onChange={(event) => onQuantityChange(addOn.id, event.target.checked ? Math.max(quantity, 1) : 0)}
                   />
                   <span className="check-box" aria-hidden="true">{isSelected && <Check size={11} />}</span>
-                  <span><strong>{addOn.label}</strong><small>{money(realEstateAddOnPrice(addOn.id))} / {unitLabel}</small>{addOn.included && <small>{addOn.included}</small>}</span>
+                  <span><strong>{addOn.label}</strong><small><PriceTag price={realEstateAddOnPrice(addOn.id)} regular={regularPrice(realEstateAddOnPrice(addOn.id))} /> / {unitLabel}</small>{addOn.included && <small>{addOn.included}</small>}</span>
                 </label>
                 {(addOn.unit === "photo" || addOn.unit === "room") && isSelected ? (
                   <label className="sr-only" htmlFor={`quantity-${addOn.id}`}>{addOn.label} quantity</label>
@@ -910,8 +1000,10 @@ function RealEstateCalculator({
           })}
         </div>
       </div>
+      </>
+      )}
       <div className="calculator-section">
-        <div className="step-heading"><span className="step-number">04</span><h3>Add ongoing marketing retainers</h3></div>
+        <div className="step-heading"><span className="step-number">05</span><h3>Add ongoing marketing retainers</h3></div>
         <div className="addon-list calculator-retainers">
           {realEstateRetainers.map((item) => (
             <div className={`addon-row${retainers[item.id] ? " is-selected" : ""}${item.featured ? " is-featured" : ""}`} key={item.id}>
@@ -930,43 +1022,6 @@ function RealEstateCalculator({
           </ul>
         )}
       </div>
-      {compareOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCompareOpen(false)}>
-          <section className="compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-title">
-            <button className="icon-button lightbox-close" type="button" aria-label="Close comparison" onClick={() => setCompareOpen(false)}><X size={17} /></button>
-            <span className="section-kicker">Two ways to book</span>
-            <h2 id="compare-title">À la carte or turnkey package</h2>
-            <p className="compare-intro">Build exactly what you need à la carte, or choose a turnkey package that bundles media, video, enhancements and a 30-day social campaign for less. Prices shown for {realEstateTiers.find((tier) => tier.id === tierId)?.label}.</p>
-            <div className="compare-grid">
-              <article className="compare-card">
-                <h3>Build À La Carte</h3>
-                <p>Pick a base package, add one video, then choose only the enhancements you want, including the 30-Day Social Post Pack (+{money(realEstateAddOnPrice("social-post-pack"))}) or Premium Social Syndication Engine (+{money(realEstateAddOnPrice("social-syndication-engine"))}).</p>
-                <button type="button" className="button-outline" onClick={() => { if (selectedPackage?.turnkey) onPackageChange("standard-mls-suite"); setCompareOpen(false); }}>Build à la carte</button>
-              </article>
-              {realEstatePackageList.filter((item) => item.turnkey).map((item) => {
-                const value = realEstatePackageValue(item.id, tierId);
-                return (
-                  <article className={`compare-card is-package${packageId === item.id ? " is-selected" : ""}`} key={item.id}>
-                    {item.badge && <span className="turnkey-tag">{item.badge}</span>}
-                    <h3>{item.name}</h3>
-                    <ul>{item.features.map((feature) => <li key={feature} className={/Social/.test(feature) ? "is-social" : undefined}>{feature}</li>)}</ul>
-                    {value && (
-                      <div className="compare-value">
-                        {value.lines.map((line) => <div key={line.label}><span>{line.label}</span><strong>{money(line.amount)}</strong></div>)}
-                        <div className="compare-total"><span>À la carte value</span><strong>{money(value.value)}</strong></div>
-                        <div className="compare-total"><span>Package price</span><strong>{money(value.price)}</strong></div>
-                        <div className="compare-savings"><span>You save</span><strong>{money(value.savings)}</strong></div>
-                      </div>
-                    )}
-                    <button type="button" className="button-primary" onClick={() => { onPackageChange(item.id as RealEstatePackageId); setCompareOpen(false); }}>Select this package</button>
-                  </article>
-                );
-              })}
-            </div>
-            <small className="compare-note">Savings are conservative: expanded photo and drone volume, the 2D floor plan upgrade and priority delivery are not counted.</small>
-          </section>
-        </div>
-      )}
     </div>
   );
 }
@@ -1287,6 +1342,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [receipt, setReceipt] = useState<BookingReceipt | null>(null);
   const [selectedGallery, setSelectedGallery] = useState<GalleryItem | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [gatewayOpen, setGatewayOpen] = useState(false);
   const pricing = track === "real-estate"
     ? quoteRealEstate(realEstatePackageId, tierId, quantities, Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id), realEstateVideoId)
     : quoteCommercial(packageId, Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id));
@@ -1304,7 +1360,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const finalPrice = Math.max(0, originalTotal - discountAmount);
 
   useEffect(() => {
-    if (!selectedGallery && !videoOpen && !receipt) return;
+    if (!selectedGallery && !videoOpen && !receipt && !gatewayOpen) return;
     const previousOverflow = document.body.style.overflow;
     const moveByKeyboard = (direction: number) => {
       if (!selectedGallery) return;
@@ -1321,6 +1377,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         setSelectedGallery(null);
         setVideoOpen(false);
         setReceipt(null);
+        setGatewayOpen(false);
       }
       if (selectedGallery && event.key === "ArrowLeft") moveByKeyboard(-1);
       if (selectedGallery && event.key === "ArrowRight") moveByKeyboard(1);
@@ -1331,7 +1388,21 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeydown);
     };
-  }, [selectedGallery, videoOpen, receipt, track, filter]);
+  }, [selectedGallery, videoOpen, receipt, gatewayOpen, track, filter]);
+
+  useEffect(() => {
+    if (track !== "real-estate" || sessionStorage.getItem("pricing-gateway-seen")) return;
+    const target = document.getElementById("pricing");
+    if (!target) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      sessionStorage.setItem("pricing-gateway-seen", "1");
+      setGatewayOpen(true);
+      observer.disconnect();
+    }, { threshold: 0.15 });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [track]);
 
   function changeTrack(next: Track) {
     setFilter("All");
@@ -1363,6 +1434,24 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
       setQuantities(createRealEstateQuantities());
     }
     setRealEstatePackageId(nextId);
+  }
+
+  function addAiToQuote(length: 30 | 90) {
+    if (track === "real-estate") {
+      if (realEstatePackageList.find((item) => item.id === realEstatePackageId)?.turnkey) selectRealEstatePackage("standard-mls-suite");
+      setRealEstateVideoId(length === 30 ? "ai-presenter-30" : "ai-presenter-90");
+    } else {
+      setRetainers((current) => ({ ...current, "ai-clone-voice-promo": length === 30, "ai-clone-voice-promo-90": length === 90 }));
+    }
+    scrollToPricing();
+  }
+
+  function chooseGatewayPath(path: "a-la-carte" | "package") {
+    const current = realEstatePackageList.find((item) => item.id === realEstatePackageId);
+    if (path === "package" && !current?.turnkey) selectRealEstatePackage("complete-showcase-suite");
+    if (path === "a-la-carte" && current?.turnkey) selectRealEstatePackage("standard-mls-suite");
+    setGatewayOpen(false);
+    scrollToPricing();
   }
 
   function updateQuantity(id: RealEstateAddOnId, quantity: number) {
@@ -1442,6 +1531,56 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     }
   }
 
+  const pricingSection = (
+      <section className="section section-paper" id="pricing">
+        <div className="shell">
+          <SectionHeading
+            kicker="Clear scope. Clear numbers."
+            title={track === "real-estate" ? <>A better listing starts <em>with the right package.</em></> : <>Choose the production <em>your next stage needs.</em></>}
+            intro={track === "real-estate" ? "Start with the property media essentials, then choose professional video as a separate production upgrade. Add utility enhancements and retainers only when they fit your listing." : "Build a first-month estimate from a clear production tier and the ongoing support you actually need."}
+          />
+          <div className="pricing-layout">
+            {track === "real-estate" ? (
+              <RealEstateCalculator
+                packageId={realEstatePackageId}
+                onPackageChange={selectRealEstatePackage}
+                tierId={tierId}
+                onTierChange={setTierId}
+                videoId={realEstateVideoId}
+                onVideoChange={setRealEstateVideoId}
+                quantities={quantities}
+                onQuantityChange={updateQuantity}
+                retainers={realEstateRetainersSelected}
+                onRetainerChange={(id, selected) => setRealEstateRetainersSelected((current) => ({ ...current, [id]: selected }))}
+                onOpenGateway={() => setGatewayOpen(true)}
+              />
+            ) : (
+              <CommercialCalculator
+                packageId={packageId}
+                onPackageChange={setPackageId}
+                retainers={retainers}
+                onRetainerChange={(id, selected) => setRetainers((current) => ({ ...current, [id]: selected }))}
+              />
+            )}
+            <QuoteDrawer
+              quote={pricing}
+              track={track}
+              onBook={scrollToBooking}
+              booking={booking}
+              originalTotal={originalTotal}
+              discountAmount={discountAmount}
+              promoInput={promoInput}
+              promoMessage={promoApplied && !promo ? "" : promoMessage}
+              promoApplied={promoApplied && Boolean(promo)}
+              onPromoInputChange={setPromoInput}
+              onApplyPromo={applyPromoCode}
+            />
+          </div>
+          {track === "real-estate" && <MeritClub />}
+        </div>
+      </section>
+  );
+
   return (
     <main id="top">
       <div className="announcement"><ShieldCheck size={13} />Locally owned · FAA Part 107 certified · Treasure Coast to Palm Beach</div>
@@ -1513,57 +1652,13 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           <GallerySection track={track} filter={filter} onFilterChange={setFilter} onOpen={setSelectedGallery} />
           {track === "real-estate" ? <ComparisonSection /> : <CommercialShowcase onPlay={() => setVideoOpen(true)} />}
           {track === "real-estate" && <RealEstateVideo />}
+          {track === "real-estate" && pricingSection}
+          {track === "real-estate" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ServicesSection track={track} onDiscuss={discussService} />
-
-          <section className="section section-paper" id="pricing">
-            <div className="shell">
-              <SectionHeading
-                kicker="Clear scope. Clear numbers."
-                title={track === "real-estate" ? <>A better listing starts <em>with the right package.</em></> : <>Choose the production <em>your next stage needs.</em></>}
-                intro={track === "real-estate" ? "Start with the property media essentials, then choose professional video as a separate production upgrade. Add utility enhancements and retainers only when they fit your listing." : "Build a first-month estimate from a clear production tier and the ongoing support you actually need."}
-              />
-              <div className="pricing-layout">
-                {track === "real-estate" ? (
-                  <RealEstateCalculator
-                    packageId={realEstatePackageId}
-                    onPackageChange={selectRealEstatePackage}
-                    tierId={tierId}
-                    onTierChange={setTierId}
-                    videoId={realEstateVideoId}
-                    onVideoChange={setRealEstateVideoId}
-                    quantities={quantities}
-                    onQuantityChange={updateQuantity}
-                    retainers={realEstateRetainersSelected}
-                    onRetainerChange={(id, selected) => setRealEstateRetainersSelected((current) => ({ ...current, [id]: selected }))}
-                  />
-                ) : (
-                  <CommercialCalculator
-                    packageId={packageId}
-                    onPackageChange={setPackageId}
-                    retainers={retainers}
-                    onRetainerChange={(id, selected) => setRetainers((current) => ({ ...current, [id]: selected }))}
-                  />
-                )}
-                <QuoteDrawer
-                  quote={pricing}
-                  track={track}
-                  onBook={scrollToBooking}
-                  booking={booking}
-                  originalTotal={originalTotal}
-                  discountAmount={discountAmount}
-                  promoInput={promoInput}
-                  promoMessage={promoApplied && !promo ? "" : promoMessage}
-                  promoApplied={promoApplied && Boolean(promo)}
-                  onPromoInputChange={setPromoInput}
-                  onApplyPromo={applyPromoCode}
-                />
-              </div>
-              {track === "real-estate" && <MeritClub />}
-            </div>
-          </section>
+          {track === "commercial" && pricingSection}
 
           <RetainersSection track={track} onDiscuss={discussService} />
-          <AiPresenterSection track={track} onDiscuss={discussService} />
+          {track === "commercial" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ProductionWorkflow track={track} />
           <BookingSection
             track={track}
@@ -1632,6 +1727,13 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           </motion.div>
         )}
       </AnimatePresence>
+      {gatewayOpen && track === "real-estate" && (
+          <PricingGateway
+            savings={Math.max(...realEstatePackageList.filter((item) => item.turnkey).map((item) => realEstatePackageValue(item.id, tierId)?.savings ?? 0))}
+            onClose={() => setGatewayOpen(false)}
+            onChoose={chooseGatewayPath}
+          />
+        )}
     </main>
   );
 }

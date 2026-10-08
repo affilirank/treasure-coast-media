@@ -6,6 +6,7 @@ export type QuoteItem = {
   quantity: number;
   unitPrice: number;
   amount: number;
+  regularAmount?: number;
   billing: "once" | "monthly";
   category?: "base-media" | "video" | "enhancement" | "retainer";
   badge?: string;
@@ -16,6 +17,8 @@ export type Quote = {
   items: QuoteItem[];
   total: number;
   recurring: number;
+  regularTotal: number;
+  savings: number;
 };
 
 export const realEstateTiers = [
@@ -126,7 +129,34 @@ export const realEstateVideoOptions = [
     price: 645,
     detail: "Full architectural narrative tour, continuous agent guidance, full aerial storytelling, 16:9 4K YouTube master + unbranded MLS link + 60s vertical teaser.",
   },
+  {
+    id: "ai-presenter-30",
+    name: "AI Presenter Listing Promo (30 sec, 9:16)",
+    price: 495,
+    detail: "No filming day. A consent-based AI presenter using your approved likeness and voice delivers a scripted 30-second listing promo.",
+    ai: true,
+  },
+  {
+    id: "ai-presenter-90",
+    name: "AI Presenter Listing Promo (up to 90 sec)",
+    price: 695,
+    detail: "Longer scripted AI presenter walkthrough with property b-roll, captions, and an unbranded MLS cut. Approved likeness and voice only.",
+    ai: true,
+  },
 ] as const;
+
+export type VideoOption = { id: string; name: string; price: number; detail: string; ai?: boolean };
+export const videoOptionList: readonly VideoOption[] = realEstateVideoOptions;
+
+// Display-only "regular" prices. Videos list $100 above the current price; everything else 20% above, rounded up to $5.
+export const REGULAR_PRICE_MARKUP = 0.2;
+export const VIDEO_REGULAR_PREMIUM = 100;
+export function regularVideoPrice(price: number) {
+  return price > 0 ? price + VIDEO_REGULAR_PREMIUM : 0;
+}
+export function regularPrice(price: number) {
+  return price > 0 ? Math.ceil((price * (1 + REGULAR_PRICE_MARKUP)) / 5) * 5 : 0;
+}
 
 export type RealEstateVideoId = (typeof realEstateVideoOptions)[number]["id"];
 
@@ -160,16 +190,17 @@ export function realEstatePackageValue(packageId: string, tierId: string) {
   const baseSuite = realEstatePackageList.find((item) => item.id === "standard-mls-suite")!;
   const video = realEstateVideoOptions.find((item) => item.id === pkg.includedVideoId);
   const lines = [
-    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex] },
-    ...(video ? [{ label: video.name, amount: video.price }] : []),
+    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex], regular: regularPrice(baseSuite.prices[tierIndex]) },
+    ...(video ? [{ label: video.name, amount: video.price, regular: regularVideoPrice(video.price) }] : []),
     ...Object.entries(pkg.includedAddOns ?? {}).map(([id, qty]) => {
       const addOn = realEstateAddOns.find((item) => item.id === id)!;
-      return { label: addOn.label, amount: addOn.price * qty };
+      return { label: addOn.label, amount: addOn.price * qty, regular: regularPrice(addOn.price) * qty };
     }),
   ];
   const value = lines.reduce((sum, line) => sum + line.amount, 0);
+  const regularValue = lines.reduce((sum, line) => sum + line.regular, 0);
   const price = pkg.prices[tierIndex];
-  return { lines, value, price, savings: Math.max(0, value - price) };
+  return { lines, value, regularValue, price, savings: Math.max(0, regularValue - price) };
 }
 
 export function realEstateAddOnPrice(id: RealEstateAddOnId) {
@@ -240,7 +271,8 @@ export const commercialRetainers: MarketingRetainer[] = [
   { id: "email-campaigns", name: "Email Campaigns & Customer Newsletter", detail: "Branded promotional and educational email campaigns that keep your customer list engaged and bring past buyers back.", price: 350, billing: "monthly", included: ["Two campaign sends per month", "Copy, layout, and audience-ready creative", "Campaign performance summary"] },
   { id: "crm-lead-nurture", name: "CRM Lead Nurture Automation", detail: "Fast, helpful SMS and email follow-up for new inquiries, with lead routing and appointment reminders.", price: 450, billing: "monthly", included: ["Lead-response sequences and reminders", "CRM pipeline and routing setup", "Monthly workflow review"] },
   { id: "google-search-management", name: "Google Search Lead Campaigns", detail: "High-intent local search campaign setup, keyword optimization, and monthly performance improvements.", price: 650, billing: "monthly", included: ["Search campaign structure and ad copy", "Local keyword and conversion review", "Ad spend paid directly to Google"] },
-  { id: "ai-clone-voice-promo", name: "AI Clone + Voice Promo Video", detail: "A consent-based 30-second customer-acquisition video using your approved likeness and voice when you prefer not to record on camera.", price: 495, billing: "once", unit: "30-second promo", included: ["Scripted offer-focused promo", "Approved likeness and voice only", "Social-ready 9:16 delivery"] },
+  { id: "ai-clone-voice-promo", name: "AI Clone + Voice Promo Video (30 sec)", detail: "A consent-based 30-second customer-acquisition video using your approved likeness and voice when you prefer not to record on camera.", price: 495, billing: "once", unit: "30-second promo", included: ["Scripted offer-focused promo", "Approved likeness and voice only", "Social-ready 9:16 delivery"] },
+  { id: "ai-clone-voice-promo-90", name: "AI Clone + Voice Promo Video (90 sec)", detail: "A consent-based 90-second customer-acquisition video using your approved likeness and voice when you prefer not to record on camera.", price: 695, billing: "once", unit: "90-second promo", included: ["Scripted offer-focused promo", "Approved likeness and voice only", "Social-ready 9:16 delivery"] },
   {
     id: "turnkey-growth-engine",
     name: "The Turnkey Business Growth Engine",
@@ -360,7 +392,7 @@ export function quoteRealEstate(
 ): Quote | null {
   const tier = realEstateTiers.find((item) => item.id === tierId);
   const selectedPackage = realEstatePackageList.find((item) => item.id === packageId);
-  const selectedVideo = realEstateVideoOptions.find((item) => item.id === videoId);
+  const selectedVideo = videoOptionList.find((item) => item.id === videoId);
   if (!tier || !selectedPackage || !selectedVideo) return null;
 
   const selectedRetainers = retainerIds.map((id) => realEstateRetainers.find((item) => item.id === id));
@@ -368,6 +400,7 @@ export function quoteRealEstate(
   const tierIndex = realEstateTiers.findIndex((item) => item.id === tier.id);
   const base = selectedPackage.prices[tierIndex];
   const videoIncluded = selectedPackage.includedVideoId === selectedVideo.id;
+  const packageValue = realEstatePackageValue(selectedPackage.id, tier.id);
   const items: QuoteItem[] = [
     {
       id: selectedPackage.id,
@@ -375,6 +408,7 @@ export function quoteRealEstate(
       quantity: 1,
       unitPrice: base,
       amount: base,
+      regularAmount: packageValue ? packageValue.regularValue : regularPrice(base),
       billing: "once",
       category: "base-media",
     },
@@ -384,6 +418,7 @@ export function quoteRealEstate(
       quantity: 1,
       unitPrice: selectedVideo.price,
       amount: videoIncluded ? 0 : selectedVideo.price,
+      regularAmount: videoIncluded ? 0 : regularVideoPrice(selectedVideo.price),
       billing: "once",
       category: "video",
       detail: selectedVideo.detail,
@@ -403,6 +438,7 @@ export function quoteRealEstate(
       quantity,
       unitPrice,
       amount: unitPrice * Math.max(0, quantity - includedQuantity),
+      regularAmount: regularPrice(unitPrice) * Math.max(0, quantity - includedQuantity),
       billing: "once",
       category: "enhancement",
       badge: includedQuantity > 0 ? `${Math.min(quantity, includedQuantity)} included in package` : undefined,
@@ -438,10 +474,15 @@ export function quoteRealEstate(
   const recurring = items
     .filter((item) => item.billing === "monthly")
     .reduce((sum, item) => sum + item.amount, 0);
+  const priced = items.filter((item) => item.regularAmount !== undefined);
+  const regularTotal = priced.reduce((sum, item) => sum + (item.regularAmount ?? 0), 0);
+  const pricedTotal = priced.reduce((sum, item) => sum + item.amount, 0);
   return {
     items,
     total: items.reduce((sum, item) => sum + item.amount, 0),
     recurring,
+    regularTotal,
+    savings: Math.max(0, regularTotal - pricedTotal),
   };
 }
 
@@ -495,5 +536,7 @@ export function quoteCommercial(
     items,
     total: items.reduce((sum, item) => sum + item.amount, 0),
     recurring,
+    regularTotal: 0,
+    savings: 0,
   };
 }
