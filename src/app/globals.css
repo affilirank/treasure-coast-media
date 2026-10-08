@@ -298,6 +298,16 @@ img, video { display: block; max-width: 100%; }
 .real-estate-package-card ul { display: grid; gap: 5px; margin: 2px 0 0; padding-left: 16px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
 .real-estate-package-card > span:last-child { align-self: end; margin-top: auto; color: #63583f; font-size: 12px; font-weight: 750; }
 .real-estate-package-card .production-featured-badge { position: absolute; top: 16px; right: 16px; }
+.turnkey-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.turnkey-card { position: relative; display: grid; align-content: start; gap: 9px; border: 1px solid var(--line); background: white; padding: 18px; color: var(--ink); text-align: left; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.turnkey-card:hover, .turnkey-card.is-selected { border-color: #a68653; background: #fbf9f4; }
+.turnkey-card:hover { transform: translateY(-1px); }
+.turnkey-card.is-selected { box-shadow: inset 0 0 0 1px #c5aa7c; }
+.turnkey-tag { width: fit-content; background: var(--ink); padding: 5px 8px; color: var(--gold-light); font-size: 8px; font-weight: 750; letter-spacing: .08em; }
+.turnkey-card > strong { font-family: var(--font-serif); font-size: 21px; font-weight: 400; line-height: 1.15; }
+.turnkey-price { color: #63583f; font-size: 13px; font-weight: 750; }
+.turnkey-card ul { display: grid; gap: 5px; margin: 0; padding-left: 16px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
+.turnkey-card > small { color: var(--muted); font-size: 9px; line-height: 1.5; }
 .tier-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 21px 0 10px; }
 .tier-heading strong { font-size: 10px; font-weight: 700; }
 .tier-heading span { color: var(--muted); font-size: 9px; }
@@ -635,7 +645,7 @@ img, video { display: block; max-width: 100%; }
 	.tier-grid { grid-template-columns: 1fr 1fr; }
 	.real-estate-package-grid { grid-template-columns: 1fr; }
 	.real-estate-package-card { min-height: auto; }
-	.video-choice-grid { grid-template-columns: 1fr; }
+	.video-choice-grid, .turnkey-grid { grid-template-columns: 1fr; }
 	.video-choice-card { min-height: 155px; }
 	.tier-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
 	.tier-option { min-height: 86px; }

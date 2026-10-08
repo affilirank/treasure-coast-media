@@ -27,6 +27,18 @@ export const realEstateTiers = [
 
 export type RealEstateTierId = (typeof realEstateTiers)[number]["id"];
 
+export type RealEstatePackage = {
+  id: string;
+  name: string;
+  target: string;
+  badge?: string;
+  features: readonly string[];
+  prices: readonly number[];
+  turnkey?: boolean;
+  includedVideoId?: string;
+  includedAddOns?: Readonly<Record<string, number>>;
+};
+
 export const realEstatePackages = [
   {
     id: "essentials",
@@ -40,11 +52,52 @@ export const realEstatePackages = [
     id: "standard-mls-suite",
     name: "Full Media Suite (Photos + Drone + 2D Floor Plan)",
     target: "A complete listing-ready media foundation.",
-    badge: "MOST POPULAR",
+    badge: undefined,
     features: ["HDR Stills", "5–8 4K Aerials", "Laser 2D Schematic Floor Plan"],
     prices: [275, 345, 425, 525],
   },
+  {
+    id: "complete-showcase-suite",
+    name: "The Complete Showcase Suite",
+    target: "A complete listing launch in one package.",
+    badge: "MOST POPULAR · COMPLETE LISTING LAUNCH",
+    turnkey: true,
+    includedVideoId: "realtor-hosted-branding-reel",
+    includedAddOns: { "zillow-tour": 1, "virtual-twilight": 1, "boundary-outline": 1 },
+    features: [
+      "Standard Media Suite: ~35 HDR Stills, 5–8 4K Aerials, 2D Schematic Floor Plan",
+      "60-Sec Realtor-Hosted Branding Reel (9:16 Vertical + MLS-compliant Cut)",
+      "Zillow 3D Home Tour + Interactive Floor Plan",
+      "1 Virtual Twilight Hero Still",
+      "Drone Property Boundary Line Graphic",
+      "30-Day Automated Social Post Pack (Pre-scheduled via GoHighLevel CSV)",
+    ],
+    prices: [795, 795, 895, 995],
+  },
+  {
+    id: "waterfront-estate-luxury-suite",
+    name: "The Waterfront & Estate Luxury Suite",
+    target: "Waterfront estates, acreage, and signature luxury listings.",
+    badge: "SIGNATURE LUXURY · WATERFRONT & ACREAGE",
+    turnkey: true,
+    includedVideoId: "cinematic-showcase-film",
+    includedAddOns: { "amenities-suite": 1, "boundary-outline": 1, "zillow-tour": 1, "virtual-twilight": 1 },
+    features: [
+      "Comprehensive Luxury Photo Suite: 50–60+ hand-blended master HDR stills (interiors, architectural details, exterior vignettes)",
+      "Expanded 4K Drone Suite: 12–15+ aerials highlighting waterfront access, dock, canals, lot scale, and coastal geography",
+      "Included Drone Boundary Graphic with lot line overlay",
+      "Included Neighborhood, Waterfront & HOA Amenity Suite (marina, clubhouse, beach access, golf)",
+      "Up to 2-Minute Cinematic Showcase Film (16:9 4K Master + Unbranded MLS Cut)",
+      "Zillow 3D Home Tour + 2D Floor Plan",
+      "1 Hand-Crafted Virtual Twilight Hero Still",
+      "30-Day Premium Social Syndication Engine (automated via GHL): 4 vertical reels, one per week (Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) and 8 branded feed/carousel posts with localized copy and hashtags",
+      "Priority 9:00 AM Next-Day Delivery Guarantee",
+    ],
+    prices: [1195, 1195, 1295, 1395],
+  },
 ] as const;
+
+export const realEstatePackageList: readonly RealEstatePackage[] = realEstatePackages;
 
 export type RealEstatePackageId = (typeof realEstatePackages)[number]["id"];
 
@@ -58,20 +111,20 @@ export const realEstateVideoOptions = [
   {
     id: "cinematic-b-roll-reel",
     name: "60-Sec Cinematic B-Roll Reel (9:16)",
-    price: 325,
-    detail: "High-energy vertical walkthrough, 4K Sony gimbal glides, aerial cuts, and licensed music.",
+    price: 275,
+    detail: "Fast-paced vertical property walkthrough, 4K Sony gimbal glides, aerial cuts, licensed music. (No speaking).",
   },
   {
     id: "realtor-hosted-branding-reel",
-    name: "60-Sec Realtor-Hosted Branding Reel",
-    price: 390,
-    detail: "Agent on-camera hook and outro, wireless audio, animated lower-third branding, kinetic captions, plus an MLS-compliant unbranded cut.",
+    name: "60-Sec Realtor-Hosted Branding Reel (9:16)",
+    price: 395,
+    detail: "Agent on-camera hook & outro, wireless lapel audio, animated lower-third branding, kinetic subtitles, plus an unbranded MLS cut.",
   },
   {
     id: "cinematic-showcase-film",
     name: "Up to 2-Minute Cinematic Showcase Film (16:9 + Drone)",
     price: 645,
-    detail: "Full architectural tour, complete aerial storytelling, unbranded MLS cut, and 4K YouTube/social master.",
+    detail: "Full architectural narrative tour, continuous agent guidance, full aerial storytelling, 16:9 4K YouTube master + unbranded MLS link + 60s vertical teaser.",
   },
 ] as const;
 
@@ -87,11 +140,12 @@ export type RealEstateAddOn = {
 };
 
 export const realEstateAddOns: RealEstateAddOn[] = [
-  { id: "virtual-staging", label: "Virtual staging", price: 35, unit: "room" },
-  { id: "virtual-twilight", label: "Virtual twilight conversion", price: 25, unit: "photo" },
-  { id: "decluttering", label: "Virtual decluttering / object removal", price: 20, unit: "photo" },
+  { id: "amenities-suite", label: "Neighborhood, Waterfront & HOA Amenities Suite", price: 65, unit: "property", included: "Dedicated coverage of community clubhouse, resort pool, golf courses, marina, private boat ramps, or beach access." },
+  { id: "boundary-outline", label: "Drone Property Boundary Line Graphic", price: 25, unit: "property" },
+  { id: "virtual-twilight", label: "Virtual Twilight Conversion", price: 25, unit: "photo" },
+  { id: "virtual-staging", label: "Virtual Staging", price: 35, unit: "room" },
+  { id: "decluttering", label: "Virtual Decluttering / Object Removal", price: 20, unit: "photo" },
   { id: "zillow-tour", label: "Zillow 3D Home Tour + Interactive Floor Plan", price: 85, unit: "property" },
-  { id: "boundary-outline", label: "Drone property boundary graphic", price: 25, unit: "property" },
   { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 75, unit: "property" },
 ] as const;
 
@@ -284,7 +338,7 @@ export function quoteRealEstate(
   videoId: string = "no-video",
 ): Quote | null {
   const tier = realEstateTiers.find((item) => item.id === tierId);
-  const selectedPackage = realEstatePackages.find((item) => item.id === packageId);
+  const selectedPackage = realEstatePackageList.find((item) => item.id === packageId);
   const selectedVideo = realEstateVideoOptions.find((item) => item.id === videoId);
   if (!tier || !selectedPackage || !selectedVideo) return null;
 
@@ -292,6 +346,7 @@ export function quoteRealEstate(
   if (selectedRetainers.some((item) => !item)) return null;
   const tierIndex = realEstateTiers.findIndex((item) => item.id === tier.id);
   const base = selectedPackage.prices[tierIndex];
+  const videoIncluded = selectedPackage.includedVideoId === selectedVideo.id;
   const items: QuoteItem[] = [
     {
       id: selectedPackage.id,
@@ -307,10 +362,11 @@ export function quoteRealEstate(
       label: selectedVideo.name,
       quantity: 1,
       unitPrice: selectedVideo.price,
-      amount: selectedVideo.price,
+      amount: videoIncluded ? 0 : selectedVideo.price,
       billing: "once",
       category: "video",
       detail: selectedVideo.detail,
+      badge: videoIncluded ? "Included in package" : undefined,
     },
   ];
 
@@ -319,14 +375,16 @@ export function quoteRealEstate(
     if (!Number.isInteger(quantity) || quantity < 0 || quantity > 40) return null;
     if (quantity === 0) continue;
     const unitPrice = realEstateAddOnPrice(addOn.id);
+    const includedQuantity = selectedPackage.includedAddOns?.[addOn.id] ?? 0;
     items.push({
       id: addOn.id,
       label: addOn.label,
       quantity,
       unitPrice,
-      amount: unitPrice * quantity,
+      amount: unitPrice * Math.max(0, quantity - includedQuantity),
       billing: "once",
       category: "enhancement",
+      badge: includedQuantity > 0 ? `${Math.min(quantity, includedQuantity)} included in package` : undefined,
     });
   }
 

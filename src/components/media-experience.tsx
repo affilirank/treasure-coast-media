@@ -49,7 +49,7 @@ import {
   resolvePromoDiscount,
   realEstateAddOns,
   realEstateGallery,
-  realEstatePackages,
+  realEstatePackageList,
   realEstateRetainers,
   realEstateTiers,
   realEstateVideoOptions,
@@ -684,7 +684,7 @@ function QuoteDrawer({
   onApplyPromo: () => void;
 }) {
   const quoteCategories: { id: NonNullable<QuoteItem["category"]>; label: string }[] = [
-    { id: "base-media", label: "Base Media" },
+    { id: "base-media", label: "Selected Package / Base Media" },
     { id: "video", label: "Video Choice" },
     { id: "enhancement", label: "Enhancements" },
     { id: "retainer", label: "Retainers" },
@@ -702,7 +702,7 @@ function QuoteDrawer({
       <div className="quote-items">
         {track === "real-estate" && quote ? (
           <>
-            <p className="quote-equation">Base Media + Video Choice + Enhancements + Retainers</p>
+            <p className="quote-equation">Package / Base Media + Video Choice + Enhancements + Retainers = Estimated Total</p>
             {quoteCategories.map((category) => {
               const items = quote.items.filter((item) => item.category === category.id);
               const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
@@ -803,19 +803,46 @@ function RealEstateCalculator({
   retainers: Record<RealEstateRetainerId, boolean>;
   onRetainerChange: (id: RealEstateRetainerId, selected: boolean) => void;
 }) {
+  const selectedPackage = realEstatePackageList.find((item) => item.id === packageId);
+  const includedAddOns = selectedPackage?.includedAddOns ?? {};
+  const turnkeyPackages = realEstatePackageList.filter((item) => item.turnkey);
+  const basePackages = realEstatePackageList.filter((item) => !item.turnkey);
+
   return (
     <div className="calculator">
+      <div className="calculator-section turnkey-section">
+        <div className="step-heading"><span className="step-number">★</span><h3>Quick-select turnkey packages</h3></div>
+        <div className="turnkey-grid" role="radiogroup" aria-label="Turnkey packages">
+          {turnkeyPackages.map((item) => (
+            <button
+              type="button"
+              className={`turnkey-card${packageId === item.id ? " is-selected" : ""}`}
+              role="radio"
+              aria-checked={packageId === item.id}
+              key={item.id}
+              onClick={() => onPackageChange(item.id as RealEstatePackageId)}
+            >
+              {item.badge && <span className="turnkey-tag">{item.badge}</span>}
+              <strong>{item.name}</strong>
+              <span className="turnkey-price">{money(item.prices[0])} base</span>
+              <ul>{item.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+              <small>Base covers up to 2,800 SQFT; +$100 for 2,801–3,800; +$200 for 3,801+.</small>
+              <span className="video-choice-status">{packageId === item.id ? "Selected" : "Select package"}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="calculator-section">
         <div className="step-heading"><span className="step-number">01</span><h3>Base property media · Select one</h3></div>
         <div className="real-estate-package-grid" role="radiogroup" aria-label="Base property media">
-          {realEstatePackages.map((item) => (
+          {basePackages.map((item) => (
             <button
               type="button"
               className={`real-estate-package-card${packageId === item.id ? " is-selected" : ""}`}
               role="radio"
               aria-checked={packageId === item.id}
               key={item.id}
-              onClick={() => onPackageChange(item.id)}
+              onClick={() => onPackageChange(item.id as RealEstatePackageId)}
             >
               {item.badge && <span className="production-featured-badge">{item.badge}</span>}
               <strong>{item.name}</strong>
@@ -825,12 +852,12 @@ function RealEstateCalculator({
             </button>
           ))}
         </div>
-        <div className="tier-heading"><strong>Choose the home’s square footage</strong><span>Photo-Only Essentials increases by $40 per tier.</span></div>
+        <div className="tier-heading"><strong>Choose the home’s square footage</strong><span>{selectedPackage?.turnkey ? "Turnkey base covers up to 2,800 SQFT; +$100 / +$200 above." : "Photo-Only Essentials increases by $40 per tier."}</span></div>
         <div className="tier-grid" role="radiogroup" aria-label="Property square footage">
           {realEstateTiers.map((tier) => (
             <label className={`tier-option${tierId === tier.id ? " is-selected" : ""}`} key={tier.id}>
               <input type="radio" name="sqft-tier" value={tier.id} checked={tierId === tier.id} onChange={() => onTierChange(tier.id)} />
-              <span>{tier.label}</span><strong>{money(realEstatePackages.find((item) => item.id === packageId)?.prices[realEstateTiers.findIndex((item) => item.id === tier.id)] ?? 0)}</strong>
+              <span>{tier.label}</span><strong>{money(selectedPackage?.prices[realEstateTiers.findIndex((item) => item.id === tier.id)] ?? 0)}</strong>
             </label>
           ))}
         </div>
@@ -847,7 +874,7 @@ function RealEstateCalculator({
               key={video.id}
               onClick={() => onVideoChange(video.id)}
             >
-              <span className="video-choice-price">{video.price === 0 ? "$0" : `+${money(video.price)}`}</span>
+              <span className="video-choice-price">{video.price === 0 ? "$0" : selectedPackage?.includedVideoId === video.id ? "Included" : `+${money(video.price)}`}</span>
               <strong>{video.name}</strong>
               <small>{video.detail}</small>
               <span className="video-choice-status">{videoId === video.id ? "Selected" : "Select video"}</span>
@@ -872,7 +899,7 @@ function RealEstateCalculator({
                     onChange={(event) => onQuantityChange(addOn.id, event.target.checked ? Math.max(quantity, 1) : 0)}
                   />
                   <span className="check-box" aria-hidden="true">{isSelected && <Check size={11} />}</span>
-                  <span><strong>{addOn.label}</strong><small>{money(realEstateAddOnPrice(addOn.id))} / {unitLabel}</small></span>
+                  <span><strong>{addOn.label}</strong><small>{money(realEstateAddOnPrice(addOn.id))} / {unitLabel}</small>{addOn.included && <small>{addOn.included}</small>}</span>
                 </label>
                 {(addOn.unit === "photo" || addOn.unit === "room") && isSelected ? (
                   <label className="sr-only" htmlFor={`quantity-${addOn.id}`}>{addOn.label} quantity</label>
@@ -888,7 +915,7 @@ function RealEstateCalculator({
                     aria-label={`${addOn.label} quantity`}
                     onChange={(event) => onQuantityChange(addOn.id, Math.min(40, Math.max(0, Number(event.target.value))))}
                   />
-                ) : <strong className="addon-price">{isSelected ? money(realEstateAddOnPrice(addOn.id) * quantity) : "+" + money(realEstateAddOnPrice(addOn.id))}</strong>}
+                ) : <strong className="addon-price">{isSelected ? (quantity <= (includedAddOns[addOn.id] ?? 0) ? "Included" : money(realEstateAddOnPrice(addOn.id) * (quantity - (includedAddOns[addOn.id] ?? 0)))) : "+" + money(realEstateAddOnPrice(addOn.id))}</strong>}
               </div>
             );
           })}
@@ -1299,6 +1326,19 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     setSelectedGallery(gallery[(currentIndex + direction + gallery.length) % gallery.length]);
   }
 
+  function selectRealEstatePackage(nextId: RealEstatePackageId) {
+    const next = realEstatePackageList.find((item) => item.id === nextId);
+    const previous = realEstatePackageList.find((item) => item.id === realEstatePackageId);
+    if (next?.turnkey) {
+      setRealEstateVideoId((next.includedVideoId ?? "no-video") as RealEstateVideoId);
+      setQuantities({ ...createRealEstateQuantities(), ...next.includedAddOns } as Record<RealEstateAddOnId, number>);
+    } else if (previous?.turnkey) {
+      setRealEstateVideoId("no-video");
+      setQuantities(createRealEstateQuantities());
+    }
+    setRealEstatePackageId(nextId);
+  }
+
   function updateQuantity(id: RealEstateAddOnId, quantity: number) {
     setQuantities((current) => ({ ...current, [id]: quantity }));
   }
@@ -1460,7 +1500,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
                 {track === "real-estate" ? (
                   <RealEstateCalculator
                     packageId={realEstatePackageId}
-                    onPackageChange={setRealEstatePackageId}
+                    onPackageChange={selectRealEstatePackage}
                     tierId={tierId}
                     onTierChange={setTierId}
                     videoId={realEstateVideoId}
