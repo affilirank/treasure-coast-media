@@ -1,6 +1,8 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import { supabaseAdmin } from "@/lib/supabase";
 import { deleteObjects } from "@/lib/storage";
+import { formatMoney, siteUrl } from "@/lib/delivery";
+import { sendDiscountEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -21,7 +23,11 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/deli
   }
 
   const db = supabaseAdmin();
-  const { data: listing } = await db.from("listings").select("id, invoice_amount, is_paid").eq("id", id).maybeSingle<{ id: string; invoice_amount: number | string; is_paid: boolean }>();
+  const { data: listing } = await db
+    .from("listings")
+    .select("id, invoice_amount, is_paid, agent_email, agent_name, property_address, access_token")
+    .eq("id", id)
+    .maybeSingle<{ id: string; invoice_amount: number | string; is_paid: boolean; agent_email: string; agent_name: string; property_address: string; access_token: string }>();
   if (!listing) return Response.json({ error: "Delivery not found." }, { status: 404 });
   if (listing.is_paid) return Response.json({ error: "This delivery is already marked paid." }, { status: 409 });
 
@@ -45,7 +51,26 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/deli
     const adminNotes = typeof body.notes === "string" ? body.notes.trim().slice(0, 500) || null : null;
     const { error } = await db.from("listings").update({ discount_amount: discountAmount, promo_code: promoCode, admin_notes: adminNotes }).eq("id", id);
     if (error) return Response.json({ error: "Could not apply the discount. Has the discounts migration been applied?" }, { status: 500 });
-    return Response.json({ discountAmount, promoCode }, { headers: { "cache-control": "no-store" } });
+
+    // Email the customer the new price with the original struck through and the balance highlighted.
+    let email: "sent" | "preview" | "failed" = "failed";
+    try {
+      const result = await sendDiscountEmail({
+        to: [listing.agent_email],
+        agentName: listing.agent_name,
+        propertyAddress: listing.property_address,
+        originalAmount: formatMoney(invoice),
+        discountAmount: formatMoney(discountAmount),
+        newAmount: formatMoney(Math.max(0, invoice - discountAmount)),
+        description: adminNotes,
+        promoCode,
+        deliveryUrl: `${siteUrl()}/delivery/${listing.access_token}`,
+      });
+      email = result.status;
+    } catch {
+      email = "failed";
+    }
+    return Response.json({ discountAmount, promoCode, email }, { headers: { "cache-control": "no-store" } });
   }
 
   return Response.json({ error: "Unknown action." }, { status: 400 });

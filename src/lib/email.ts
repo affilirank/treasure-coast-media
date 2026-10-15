@@ -146,6 +146,44 @@ export async function sendDeliveryReadyEmail(input: { to: string[]; agentName: s
   return { status: "sent" as const };
 }
 
+export async function sendDiscountEmail(input: {
+  to: string[];
+  agentName: string;
+  propertyAddress: string;
+  originalAmount: string;
+  discountAmount: string;
+  newAmount: string;
+  description?: string | null;
+  promoCode?: string | null;
+  deliveryUrl: string;
+}) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const };
+
+  const reason = [input.promoCode ? `Code ${input.promoCode}` : null, input.description ? escapeHtml(input.description) : null].filter(Boolean).join(" — ");
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">A discount has been applied to your invoice</h2>
+    <p>Hi ${escapeHtml(input.agentName)},</p>
+    <p>Good news — we've applied a discount to the media for <strong>${escapeHtml(input.propertyAddress)}</strong>.${reason ? ` Reason: ${reason}.` : ""}</p>
+    <div style="border:1px solid #e5e0d5;border-radius:10px;padding:22px 20px;text-align:center;background:#fbf7ef;margin:20px 0;">
+      <p style="margin:0;color:#8a938f;font-size:15px;"><span style="text-decoration:line-through;">${escapeHtml(input.originalAmount)}</span></p>
+      <p style="margin:8px 0 4px;color:#0f766e;font-size:14px;font-weight:bold;">You save ${escapeHtml(input.discountAmount)}</p>
+      <p style="margin:4px 0 0;font-size:34px;font-weight:800;color:#14201e;border-top:2px solid #c4a16a;padding-top:10px;">${escapeHtml(input.newAmount)}</p>
+      <p style="margin:6px 0 0;color:#65726e;font-size:12px;text-transform:uppercase;letter-spacing:1px;">New balance due</p>
+    </div>
+    ${button(input.deliveryUrl, "View &amp; Pay")}`);
+
+  const result = await new Resend(config.apiKey).emails.send({
+    from: config.from,
+    to: input.to,
+    subject: `Discount applied — ${input.propertyAddress} is now ${input.newAmount}`,
+    html,
+  });
+  if (result.error) throw new Error(result.error.message ?? "Failed to send discount email");
+  return { status: "sent" as const };
+}
+
 export async function sendPromoEmail(input: { to: string[]; subject: string; heading: string; body: string; code?: string | null; offerUrl?: string | null }) {
   const config = emailConfig();
   if (!config) return { status: "preview" as const, sent: 0 };

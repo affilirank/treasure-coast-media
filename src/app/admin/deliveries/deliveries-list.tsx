@@ -77,15 +77,17 @@ export default function DeliveriesList() {
     const discountAmount = Number(input);
     if (!Number.isFinite(discountAmount) || discountAmount < 0) return setMessage("Enter a valid discount amount.");
     const promoCode = window.prompt("Promo code / reason (optional, e.g. GOODWILL):", row.promo_code ?? "") ?? "";
+    const notes = window.prompt("Description shown to the customer in the discount email (optional):", "") ?? "";
     setBusy(row.id + "discount");
     setMessage("");
     const response = await fetch(`/api/admin/deliveries/${row.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "discount", discountAmount, promoCode }),
+      body: JSON.stringify({ action: "discount", discountAmount, promoCode, notes }),
     });
     const result = await response.json();
-    setMessage(response.ok ? `Discount of $${discountAmount.toLocaleString()} applied.` : result.error ?? "Could not apply discount.");
+    const emailNote = result.email === "sent" ? " The customer was emailed the new price." : result.email === "preview" ? " (Email not configured — not sent.)" : result.email === "failed" ? " (Customer email could not be sent.)" : "";
+    setMessage(response.ok ? `Discount of $${discountAmount.toLocaleString()} applied.${emailNote}` : result.error ?? "Could not apply discount.");
     setBusy("");
     await load();
   }
