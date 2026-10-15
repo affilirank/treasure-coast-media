@@ -4,11 +4,6 @@ import type { StoredBooking } from "@/lib/booking-store";
 
 export const runtime = "nodejs";
 
-// Mirrors the deposit rule used at booking time (src/app/api/bookings/route.ts).
-function depositFor(total: number) {
-  return Math.round(total * (total >= 5000 ? 0.5 : 0.25));
-}
-
 export async function GET(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
@@ -18,14 +13,17 @@ export async function GET(request: Request) {
     const records = await Promise.all(entries.map((entry) => getPrivateJson<StoredBooking>(entry.pathname).catch(() => null)));
 
     const bookings = records
-      .filter((record): record is StoredBooking => record !== null && record.track === "real-estate" && (record.paymentStatus === "paid" || record.paymentStatus === "confirmed"))
+      .filter((record): record is StoredBooking => record !== null && (record.paymentStatus === "paid" || record.paymentStatus === "confirmed"))
       .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
       .map((record) => {
-        const deposit = record.paymentStatus === "confirmed" ? 0 : depositFor(record.total);
         const address = record.booking.address;
+        const items = Array.isArray(record.items) ? record.items : [];
+        const packageSummary = record.selectedSqftTier
+          || items.map((item) => item.label).join(" + ");
         return {
           referenceId: record.referenceId,
           submittedAt: record.submittedAt,
+          track: record.track,
           shootDate: record.booking.date,
           address,
           zip: address.match(/\b\d{5}\b(?!.*\b\d{5}\b)/)?.[0] ?? "",
@@ -33,10 +31,14 @@ export async function GET(request: Request) {
           agentEmail: record.booking.email,
           agentPhone: record.booking.phone,
           brokerage: record.booking.company,
-          package: [record.selectedSqftTier, ...record.selectedAddOns.map((item) => item.label)].filter(Boolean).join(" + "),
+          package: [record.selectedSqftTier, ...(record.selectedAddOns ?? []).map((item) => item.label)].filter(Boolean).join(" + "),
+          originalTotal: record.originalTotal ?? record.total,
+          promoCode: record.appliedPromoCode ?? null,
+          discountAmount: record.discountAmount ?? 0,
           total: record.total,
-          deposit,
-          balanceDue: Math.max(0, record.total - deposit),
+          // Bookings confirm instantly with no deposit; the full quoted total flows to the delivery invoice.
+          balanceDue: record.total,
+          packageSummary,
         };
       });
 

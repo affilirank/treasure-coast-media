@@ -21,7 +21,9 @@ export async function POST(request: Request) {
   if (listing.is_paid) return Response.json({ error: "This invoice is already paid." }, { status: 409 });
 
   // The amount always comes from the database, never from the client.
-  const amountCents = Math.round(Number(listing.invoice_amount) * 100);
+  const discount = Math.max(0, Number(listing.discount_amount ?? 0));
+  const amountCents = Math.max(0, Math.round((Number(listing.invoice_amount) - discount) * 100));
+  if (amountCents <= 0) return Response.json({ error: "This delivery has no balance due. Ask the team to waive it." }, { status: 409 });
   const page = `${siteUrl()}/delivery/${listing.access_token}`;
 
   try {
@@ -41,6 +43,8 @@ export async function POST(request: Request) {
           },
         },
       ],
+      // A customer-entered promotion code (e.g. FIRST50, BLESSINGS) is validated by Stripe and flows through to the receipt.
+      allow_promotion_codes: discount === 0,
       success_url: `${page}?paid=1`,
       cancel_url: page,
     });

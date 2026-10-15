@@ -126,7 +126,7 @@ export default function CalendarEditor() {
           <div className="admin-row" key={item.referenceId}>
             <strong style={{ width: "auto" }}>{item.date} · {formatTime(item.time)}</strong>
             <span>{item.name} — {item.address}</span>
-            <span className="admin-chip">{item.status === "confirmed" ? "Paid / confirmed" : "Awaiting deposit"}</span>
+            <span className="admin-chip">{item.status === "confirmed" ? "Confirmed" : "Held"}</span>
             <button type="button" onClick={() => release(item.referenceId)}>Release slot</button>
           </div>
         ))}

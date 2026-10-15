@@ -24,6 +24,10 @@ export type Listing = {
   access_token: string;
   reminder_count: number;
   last_reminder_at: string | null;
+  discount_amount?: number | string | null;
+  promo_code?: string | null;
+  is_comp?: boolean;
+  admin_notes?: string | null;
 };
 
 export type ListingAsset = {

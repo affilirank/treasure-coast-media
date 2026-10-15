@@ -1363,7 +1363,6 @@ function SiteFooter({ track }: { track: Track }) {
           <h3>Start a conversation</h3>
           <a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a>
           <a href="#booking">Request a production date</a>
-          <a href="/client-portal">Open client portal</a>
           <p>{track === "real-estate" ? "Property media · Listings · Agent growth" : "Brand films · Commercial media · Growth"}</p>
         </div>
       </div>
@@ -1649,14 +1648,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         <div className="shell nav-shell">
           <Brand track={track} />
           <nav className="desktop-nav" aria-label="Main navigation">
-            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#retainers">Retainers</a><a href="/client-portal" onClick={() => setMenuOpen(false)}>Client portal</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
+            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#retainers">Retainers</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
           </nav>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
         <nav className={`mobile-nav${menuOpen ? " is-open" : ""}`} aria-label="Mobile navigation">
-          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#retainers" onClick={() => setMenuOpen(false)}>Retainers</a><a href="/client-portal" onClick={() => setMenuOpen(false)}>Client portal</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
+          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#retainers" onClick={() => setMenuOpen(false)}>Retainers</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
         </nav>
       </header>
 

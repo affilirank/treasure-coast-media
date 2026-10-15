@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const UPLOAD_URL_TTL_SECONDS = 15 * 60;
@@ -88,4 +88,10 @@ export async function objectExists(fileKey: string) {
   } catch {
     return false;
   }
+}
+
+/** Best-effort delete of uploaded objects. Never throws, so callers can clean up rows regardless. */
+export async function deleteObjects(fileKeys: string[]) {
+  const keys = [...new Set(fileKeys.filter((key) => key.startsWith("uploads/")))];
+  await Promise.all(keys.map((key) => s3().send(new DeleteObjectCommand({ Bucket: config().bucket, Key: key })).catch(() => undefined)));
 }

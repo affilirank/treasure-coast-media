@@ -133,7 +133,7 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const { data, error } = await supabaseAdmin()
     .from("listings")
-    .select("id, created_at, property_address, agent_name, agent_email, invoice_amount, is_paid, access_token, reminder_count, last_reminder_at")
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return Response.json({ error: "Could not load deliveries." }, { status: 500 });

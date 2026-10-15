@@ -12,8 +12,8 @@ type Links = { delivery: string; mls: string; showcase: string };
 
 const PACKAGES = ["HDR Photos", "HDR Photos + Drone", "HDR Photos + Drone + Floor Plan", "Full Production (Photos, Drone, Floor Plan, Video)"];
 type Booking = {
-  referenceId: string; shootDate: string; address: string; zip: string; agentName: string; agentEmail: string; agentPhone: string;
-  brokerage: string; package: string; total: number; deposit: number; balanceDue: number;
+  referenceId: string; track: string; shootDate: string; address: string; zip: string; agentName: string; agentEmail: string; agentPhone: string;
+  brokerage: string; package: string; originalTotal: number; promoCode: string | null; discountAmount: number; total: number; balanceDue: number;
 };
 
 const input = "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-amber-600 focus:outline-none";
@@ -236,7 +236,7 @@ export default function NewDeliveryForm() {
         <button
           type="button"
           className="rounded-md border border-neutral-300 px-3 py-1 text-neutral-800"
-          onClick={async () => { await fetch("/api/portal/login", { method: "DELETE" }); router.push("/admin"); }}
+          onClick={async () => { await fetch("/api/admin/login", { method: "DELETE" }); router.push("/admin"); }}
         >
           Log out
         </button>
@@ -246,15 +246,17 @@ export default function NewDeliveryForm() {
 
       <form onSubmit={submit} className="space-y-8">
         <section className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-          <Field label="Start from a paid booking">
+          <Field label="Start from a booking">
             <select className={input} value={bookingId} onChange={(e) => pickBooking(e.target.value)}>
-              <option value="">{bookings.length ? "Select a booking to prefill…" : "No paid bookings found — enter details manually"}</option>
-              {bookings.map((b) => <option key={b.referenceId} value={b.referenceId}>{b.address} — {b.agentName}{b.shootDate ? ` (${b.shootDate})` : ""}</option>)}
+              <option value="">{bookings.length ? "Select a booking to prefill…" : "No bookings found — enter details manually"}</option>
+              {bookings.map((b) => <option key={b.referenceId} value={b.referenceId}>{b.track === "commercial" ? "[Commercial] " : ""}{b.address} — {b.agentName}{b.shootDate ? ` (${b.shootDate})` : ""}</option>)}
             </select>
           </Field>
           {selected && (
             <p className="mt-2 text-xs text-neutral-700">
-              Booking total ${selected.total.toLocaleString()} − deposit paid ${selected.deposit.toLocaleString()} = <strong>balance due ${selected.balanceDue.toLocaleString()}</strong>. Edit the invoice total below if needed.
+              {selected.track === "commercial" ? "Commercial" : "Real estate"} booking
+              {selected.discountAmount > 0 && selected.promoCode ? ` · ${selected.promoCode} applied (−$${selected.discountAmount.toLocaleString()})` : ""}
+              {" "}· invoice <strong>${selected.balanceDue.toLocaleString()}</strong>. Edit the invoice total below if needed.
             </p>
           )}
         </section>
