@@ -145,3 +145,25 @@ export async function sendDeliveryReadyEmail(input: { to: string[]; agentName: s
   if (result.error) throw new Error(result.error.message ?? "Failed to send delivery email");
   return { status: "sent" as const };
 }
+
+export async function sendPromoEmail(input: { to: string[]; subject: string; heading: string; body: string; code?: string | null; offerUrl?: string | null }) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const, sent: 0 };
+
+  const codeBlock = input.code
+    ? `<p style="text-align:center;margin:20px 0;"><span style="display:inline-block;border:1px dashed #c4a16a;background:#fbf7ef;color:#14201e;padding:12px 20px;font-weight:bold;letter-spacing:1px;">${escapeHtml(input.code)}</span></p>`
+    : "";
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">${escapeHtml(input.heading)}</h2>
+    <div style="line-height:1.7;white-space:pre-line;">${escapeHtml(input.body)}</div>
+    ${codeBlock}
+    ${input.offerUrl ? button(input.offerUrl, "View This Offer") : ""}`);
+
+  let sent = 0;
+  for (const to of input.to) {
+    const result = await new Resend(config.apiKey).emails.send({ from: config.from, to: [to], subject: input.subject, html });
+    if (!result.error) sent += 1;
+  }
+  return { status: "sent" as const, sent };
+}

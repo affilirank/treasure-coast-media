@@ -1,5 +1,7 @@
 import Stripe from "stripe";
 import { getListingByToken, siteUrl } from "@/lib/delivery";
+import { getCustomerByEmail } from "@/lib/customers";
+import { tierForShootCount } from "@/lib/loyalty";
 
 export const runtime = "nodejs";
 
@@ -26,12 +28,24 @@ export async function POST(request: Request) {
   if (amountCents <= 0) return Response.json({ error: "This delivery has no balance due. Ask the team to waive it." }, { status: 409 });
   const page = `${siteUrl()}/delivery/${listing.access_token}`;
 
-  try {
-    const session = await new Stripe(secretKey).checkout.sessions.create({
+  // Merit Club: auto-apply the member's lifetime discount when no manual discount is set.
+  let loyaltyCoupon: string | null = null;
+  if (discount === 0) {
+    try {
+      const customer = await getCustomerByEmail(listing.agent_email);
+      if (customer) loyaltyCoupon = tierForShootCount(customer.shoot_count).couponId;
+    } catch {
+      // Customers table may not be provisioned yet; checkout still works without loyalty.
+    }
+  }
+
+  const client = new Stripe(secretKey);
+  const buildSession = (coupon: string | null) =>
+    client.checkout.sessions.create({
       mode: "payment",
       customer_email: listing.agent_email,
       client_reference_id: listing.id,
-      metadata: { listing_id: listing.id },
+      metadata: { listing_id: listing.id, ...(coupon ? { loyalty_coupon: coupon } : {}) },
       payment_intent_data: { metadata: { listing_id: listing.id } },
       line_items: [
         {
@@ -43,11 +57,23 @@ export async function POST(request: Request) {
           },
         },
       ],
-      // A customer-entered promotion code (e.g. FIRST50, BLESSINGS) is validated by Stripe and flows through to the receipt.
-      allow_promotion_codes: discount === 0,
+      // Loyalty coupon and customer-entered promo codes are mutually exclusive in Stripe Checkout.
+      ...(coupon
+        ? { discounts: [{ coupon }] }
+        : { allow_promotion_codes: discount === 0 }),
       success_url: `${page}?paid=1`,
       cancel_url: page,
     });
+
+  try {
+    let session;
+    try {
+      session = await buildSession(loyaltyCoupon);
+    } catch (error) {
+      // A stale/missing loyalty coupon must never block a customer from paying.
+      if (!loyaltyCoupon) throw error;
+      session = await buildSession(null);
+    }
     if (!session.url) throw new Error("No checkout URL");
     return Response.json({ url: session.url });
   } catch {
