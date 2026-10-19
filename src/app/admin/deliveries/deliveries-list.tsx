@@ -123,6 +123,7 @@ export default function DeliveriesList() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <a className={btn} href={row.links.delivery} target="_blank" rel="noreferrer">Open portal</a>
+          <Link className={btn} href={`/admin/deliveries/${row.id}/tour`}>Edit tour page</Link>
           <button className={btn} onClick={() => navigator.clipboard.writeText(row.links.delivery)}>Copy link</button>
           {!row.is_paid && (
             <>

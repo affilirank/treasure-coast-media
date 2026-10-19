@@ -778,3 +778,21 @@ img, video { display: block; max-width: 100%; }
 .admin-calendar .admin-row > strong { width: 44px; }
 .admin-calendar .admin-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); padding: 5px 10px; }
 .admin-calendar .admin-status { color: #25613b; font-weight: 700; }
+
+/* Listing landing pages: cinematic hero + lightbox transitions */
+@keyframes ll-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ll-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ll-progress { from { width: 0; } to { width: 100%; } }
+@keyframes ll-zoom { from { transform: scale(1.02); } to { transform: scale(1.12); } }
+@keyframes ll-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+.ll-rise { animation: ll-rise .8s ease-out both; }
+.ll-rise-1 { animation-delay: .08s; }
+.ll-rise-2 { animation-delay: .18s; }
+.ll-rise-3 { animation-delay: .28s; }
+.ll-fade { animation: ll-fade-in .5s ease-out both; }
+.ll-zoom { animation: ll-zoom 9s ease-out both; }
+.ll-progress { animation: ll-progress 5.5s linear both; }
+.ll-bounce { animation: ll-bounce 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ll-rise, .ll-fade, .ll-zoom, .ll-progress, .ll-bounce { animation: none; }
+}

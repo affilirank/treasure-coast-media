@@ -28,6 +28,19 @@ export type Listing = {
   promo_code?: string | null;
   is_comp?: boolean;
   admin_notes?: string | null;
+  beds?: number | null;
+  baths?: number | string | null;
+  sqft?: number | null;
+  lot_size?: string | null;
+  year_built?: number | null;
+  list_price?: number | string | null;
+  property_type?: string | null;
+  mls_number?: string | null;
+  headline?: string | null;
+  description?: string | null;
+  features?: string[] | null;
+  agent_bio?: string | null;
+  showing_url?: string | null;
 };
 
 export type ListingAsset = {
