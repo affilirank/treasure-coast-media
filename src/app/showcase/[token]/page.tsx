@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ListingLanding from "@/components/listing/listing-landing";
 import { loadTour } from "@/lib/tour";
+import { resolveHeadshotUrl } from "@/lib/delivery";
 import { factsFromListing, type ListingRow } from "@/lib/listing-details";
 
 export const metadata: Metadata = { title: "Property Showcase", robots: { index: false, follow: false } };
@@ -33,7 +34,7 @@ export default async function ShowcasePage({ params }: PageProps<"/showcase/[tok
         videoUrl={tour.videoUrl}
         floorPlanUrl={tour.floorPlanUrl}
         floorPlanPdfUrl={tour.floorPlanPdfUrl}
-        agent={{ name: listing.agent_name, email: listing.agent_email, phone: listing.agent_phone, brokerage: listing.brokerage_name, headshot: listing.agent_headshot_url }}
+        agent={{ name: listing.agent_name, email: listing.agent_email, phone: listing.agent_phone, brokerage: listing.brokerage_name, headshot: await resolveHeadshotUrl(listing.agent_headshot_url) }}
       />
     </main>
   );

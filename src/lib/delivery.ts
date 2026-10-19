@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getObjectUrl } from "@/lib/storage";
 
 export const ASSET_TYPES = ["hdr_still", "drone_aerial", "floor_plan_pdf", "floor_plan_img", "walkthrough_video"] as const;
 export type AssetType = (typeof ASSET_TYPES)[number];
@@ -57,6 +58,26 @@ const TOKEN_PATTERN = /^[0-9a-f]{32}$/;
 
 export function isValidToken(token: string) {
   return TOKEN_PATTERN.test(token);
+}
+
+const HEADSHOT_KEY_PATTERN = /^listings\/[0-9a-f-]{36}\/agent-headshot\.jpg$/;
+
+/**
+ * Customer-uploaded headshots are stored as "r2:<key>" markers so the page can sign a
+ * fresh URL on every load; admin-entered https URLs pass straight through.
+ */
+export async function resolveHeadshotUrl(value: string | null | undefined): Promise<string | null> {
+  if (!value) return null;
+  if (value.startsWith("r2:")) {
+    const key = value.slice(3);
+    if (!HEADSHOT_KEY_PATTERN.test(key)) return null;
+    try {
+      return await getObjectUrl(key, { expiresIn: 3600 });
+    } catch {
+      return null;
+    }
+  }
+  return value;
 }
 
 export function siteUrl() {

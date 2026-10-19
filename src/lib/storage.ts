@@ -51,6 +51,32 @@ export async function getUploadPresignedUrl(fileName: string, contentType: strin
   return { key, url };
 }
 
+/** Fixed per-listing key so re-uploads overwrite the previous headshot instead of piling up objects. */
+export function agentHeadshotKey(listingId: string) {
+  return `listings/${listingId}/agent-headshot.jpg`;
+}
+
+/** Presigned PUT for the customer-uploaded agent headshot; the browser must send image/jpeg. */
+export async function getHeadshotUploadUrl(listingId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(listingId)) throw new Error("Invalid listing id.");
+  const key = agentHeadshotKey(listingId);
+  const url = await getSignedUrl(
+    s3(),
+    new PutObjectCommand({ Bucket: config().bucket, Key: key, ContentType: "image/jpeg" }),
+    { expiresIn: UPLOAD_URL_TTL_SECONDS },
+  );
+  return { key, url };
+}
+
+/** URL for reading a stored object back: public domain when configured, otherwise a signed GET. */
+export async function getObjectUrl(key: string, options: { expiresIn?: number } = {}) {
+  const publicDomain = process.env.R2_PUBLIC_DOMAIN?.replace(/\/+$/, "");
+  if (publicDomain) {
+    return `${publicDomain.startsWith("http") ? publicDomain : `https://${publicDomain}`}/${key}`;
+  }
+  return signGet(key, options);
+}
+
 type DownloadOptions = { expiresIn?: number; downloadName?: string };
 
 /**

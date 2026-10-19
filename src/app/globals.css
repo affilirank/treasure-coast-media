@@ -779,6 +779,32 @@ img, video { display: block; max-width: 100%; }
 .admin-calendar .admin-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); padding: 5px 10px; }
 .admin-calendar .admin-status { color: #25613b; font-weight: 700; }
 
+/* Booking calendar: tap-to-block availability grid */
+.cal-date-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.cal-date { display: grid; justify-items: center; gap: 2px; min-width: 64px; border: 1px solid var(--line); background: white; padding: 8px 6px; cursor: pointer; font: inherit; }
+.cal-date span { font-size: 11px; color: #6b7570; }
+.cal-date strong { font-size: 18px; }
+.cal-date small { font-size: 10px; color: #25613b; font-weight: 700; }
+.cal-date.is-selected { border-color: #a98955; box-shadow: inset 0 0 0 1px #a98955; }
+.cal-date.is-closed small { color: #a03d2e; }
+.cal-day { display: grid; gap: 10px; }
+.cal-day h3 { margin: 0; font-size: 14px; }
+.cal-slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+.cal-slot { display: grid; justify-items: center; gap: 1px; border: 1px solid #9db8ab; background: #f2f8f5; padding: 9px 6px; cursor: pointer; font: inherit; font-weight: 700; }
+.cal-slot small { font-size: 10px; font-weight: 500; color: #25613b; }
+.cal-slot.is-blocked { border-color: #d8a79b; background: #fbeeea; }
+.cal-slot.is-blocked small { color: #a03d2e; }
+.cal-slot.is-booked { border-color: #c4a16a; background: #f6efdf; cursor: default; }
+.cal-slot.is-booked small { color: #8a6d1f; }
+.cal-closed-note { margin: 0; color: #6b7570; }
+.cal-closed-note button { border: 1px solid var(--line); background: white; padding: 4px 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.cal-legend { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7570; }
+.cal-dot { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--line); margin-left: 10px; }
+.cal-dot.is-open { background: #f2f8f5; border-color: #9db8ab; }
+.cal-dot.is-blocked { background: #fbeeea; border-color: #d8a79b; }
+.cal-dot.is-booked { background: #f6efdf; border-color: #c4a16a; }
+.cal-hint { margin: 0; color: #6b7570; font-size: 12px; }
+
 /* Listing landing pages: cinematic hero + lightbox transitions */
 @keyframes ll-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ll-rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { deliveryLinks, getListingByToken } from "@/lib/delivery";
+import { deliveryLinks, getListingByToken, resolveHeadshotUrl } from "@/lib/delivery";
 import { getDownloadPresignedUrl, getPreviewPresignedUrl } from "@/lib/storage";
 import DeliveryClient, { type GalleryImage } from "./delivery-client";
 
@@ -39,6 +39,9 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
       hasVideo={assets.some((a) => a.asset_type === "walkthrough_video")}
       mlsLink={links.mls}
       showcaseLink={links.showcase}
+      headline={listing.headline ?? ""}
+      description={listing.description ?? ""}
+      headshotUrl={await resolveHeadshotUrl(listing.agent_headshot_url)}
     />
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { Check, Download, Link2, Loader2, Lock } from "lucide-react";
+import { Check, Download, Link2, Loader2, Lock, Upload, User } from "lucide-react";
 
 export type GalleryImage = { id: string; src: string };
 type Kind = "mls" | "print" | "floorplan";
@@ -20,9 +20,26 @@ type Props = {
   hasVideo: boolean;
   mlsLink: string;
   showcaseLink: string;
+  headline: string;
+  description: string;
+  headshotUrl: string | null;
 };
 
 const ZIP_NAMES: Record<Kind, string> = { mls: "MLS-Ready", print: "Full-Res-Print", floorplan: "Floor-Plan" };
+
+/** Client-side resize so the headshot uploads fast and renders crisp on the tour page. */
+async function toHeadshotJpeg(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const max = 640;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Could not process that image — try a JPEG or PNG."))), "image/jpeg", 0.85),
+  );
+}
 
 async function fetchDownloads(token: string, kind: Kind | "video") {
   const response = await fetch(`/api/delivery/${token}/downloads?kind=${kind}`, { cache: "no-store" });
@@ -31,7 +48,7 @@ async function fetchDownloads(token: string, kind: Kind | "video") {
   return result.files as { name: string; url: string }[];
 }
 
-export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink }: Props) {
+export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot }: Props) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -41,6 +58,14 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
   const [tipBusy, setTipBusy] = useState(false);
   const [tipError, setTipError] = useState("");
   const [tipCustom, setTipCustom] = useState("");
+  const [headline, setHeadline] = useState(initialHeadline);
+  const [description, setDescription] = useState(initialDescription);
+  const [headshotUrl, setHeadshotUrl] = useState(initialHeadshot);
+  const [headshotFile, setHeadshotFile] = useState<File | null>(null);
+  const [headshotPreview, setHeadshotPreview] = useState<string | null>(null);
+  const [tourBusy, setTourBusy] = useState(false);
+  const [tourSaved, setTourSaved] = useState(false);
+  const [tourError, setTourError] = useState("");
 
   // After Stripe redirects back, the webhook may take a few seconds to mark the listing paid.
   useEffect(() => {
@@ -132,6 +157,53 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
     }
   }
 
+  function pickHeadshot(file: File | null) {
+    setTourSaved(false);
+    setTourError("");
+    if (headshotPreview) URL.revokeObjectURL(headshotPreview);
+    setHeadshotFile(file);
+    setHeadshotPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  // Personalize the branded tour page: text fields save directly, a new headshot is
+  // resized here, uploaded to storage, then referenced by the same save call.
+  async function saveTourPage() {
+    setTourBusy(true);
+    setTourSaved(false);
+    setTourError("");
+    try {
+      let headshotKey: string | undefined;
+      if (headshotFile) {
+        const jpeg = await toHeadshotJpeg(headshotFile);
+        const presign = await fetch(`/api/delivery/${token}/headshot`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ contentType: "image/jpeg" }),
+        });
+        const signed = await presign.json();
+        if (!presign.ok || !signed.url) throw new Error(signed.error ?? "Headshot uploads are unavailable right now.");
+        const put = await fetch(signed.url, { method: "PUT", headers: { "content-type": "image/jpeg" }, body: jpeg });
+        if (!put.ok) throw new Error("Could not upload the headshot. Please try another photo.");
+        headshotKey = signed.key;
+      }
+      const response = await fetch(`/api/delivery/${token}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ headline, description, ...(headshotKey ? { headshotKey } : {}) }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Could not save your changes.");
+      setHeadshotUrl(result.headshotUrl ?? headshotUrl);
+      pickHeadshot(null);
+      setTourSaved(true);
+      setTimeout(() => setTourSaved(false), 5000);
+    } catch (cause) {
+      setTourError(cause instanceof Error ? cause.message : "Could not save your changes.");
+    } finally {
+      setTourBusy(false);
+    }
+  }
+
   const btn = "flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
@@ -192,6 +264,69 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
             ))
           )}
         </section>
+
+        {isPaid && (
+          <section className="mb-10 rounded-lg border border-[#c4a16a]/30 bg-[#c4a16a]/5 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-[#e1c697]">Make the tour page yours</h2>
+                <p className="mt-1 max-w-2xl text-sm text-neutral-300">
+                  These photos come with a branded tour page you can share anywhere. Add a headline, the property story and your agent headshot — updates go live on the tour page immediately.
+                </p>
+              </div>
+              <a href={showcaseLink} target="_blank" rel="noreferrer" className={`${btn} shrink-0 border-[#c4a16a] text-[#e1c697] hover:bg-[#c4a16a]/15`}>
+                Preview tour page <Link2 className="h-4 w-4" />
+              </a>
+            </div>
+            <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_auto]">
+              <div className="grid gap-3">
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                  Headline
+                  <input
+                    value={headline}
+                    maxLength={160}
+                    placeholder="e.g. Coastal elegance in the heart of Vero Beach"
+                    onChange={(event) => { setHeadline(event.target.value); setTourSaved(false); }}
+                    className="mt-1 w-full rounded-md border border-neutral-600 bg-transparent px-3 py-3 text-sm font-normal normal-case tracking-normal text-neutral-100 placeholder:text-neutral-500"
+                  />
+                </label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                  Property description
+                  <textarea
+                    value={description}
+                    maxLength={4000}
+                    rows={5}
+                    placeholder="Tell the story of this home — buyers will see it on the tour page."
+                    onChange={(event) => { setDescription(event.target.value); setTourSaved(false); }}
+                    className="mt-1 w-full rounded-md border border-neutral-600 bg-transparent px-3 py-3 text-sm font-normal normal-case tracking-normal text-neutral-100 placeholder:text-neutral-500"
+                  />
+                </label>
+              </div>
+              <div className="grid justify-items-center gap-3 self-start">
+                <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-[#c4a16a]/40 bg-neutral-900">
+                  {headshotPreview || headshotUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={headshotPreview ?? headshotUrl ?? ""} alt="Agent headshot" className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-10 w-10 text-neutral-600" aria-hidden />
+                  )}
+                </div>
+                <label className={`${btn} cursor-pointer border-[#c4a16a] text-[#e1c697] hover:bg-[#c4a16a]/15`}>
+                  <Upload className="h-4 w-4" /> {headshotFile ? "Chosen — save to apply" : "Choose headshot"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => pickHeadshot(event.target.files?.[0] ?? null)} />
+                </label>
+                <p className="max-w-[13rem] text-center text-xs text-neutral-500">Shown on the tour page beside your contact card. Photos are resized automatically.</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button className={`${btn} border-[#c4a16a] bg-[#c4a16a] text-[#14201e]`} disabled={tourBusy} onClick={saveTourPage}>
+                {tourBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save &amp; update tour page
+              </button>
+              {tourSaved && <p className="text-sm text-emerald-300">✓ Saved — your tour page is updated.</p>}
+              {tourError && <p role="alert" className="rounded-md bg-red-900/40 p-2 text-sm text-red-200">{tourError}</p>}
+            </div>
+          </section>
+        )}
 
         {isPaid && (
           <section className="mb-10 rounded-lg border border-[#c4a16a]/30 bg-[#c4a16a]/5 p-5">

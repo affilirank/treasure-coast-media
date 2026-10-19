@@ -1,5 +1,19 @@
 import { Resend } from "resend";
 
+/**
+ * Outlook/Gmail trust mail that looks like a real desk: a human display name and a
+ * working Reply-To. The sending domain itself must be verified in Resend (SPF/DKIM)
+ * or everything lands in junk regardless of these headers.
+ */
+function withDisplayName(from: string) {
+  return from.includes("<") ? from : `Merit Media <${from}>`;
+}
+
+function replyTo(): string[] | undefined {
+  const admin = process.env.ADMIN_NOTIFICATION_EMAIL;
+  return admin && admin.includes("@") ? [admin] : undefined;
+}
+
 export type BookingEmailInput = {
   to: string;
   name: string;
@@ -38,7 +52,8 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
   `;
 
   const result = await resend.emails.send({
-    from,
+    from: withDisplayName(from),
+    replyTo: replyTo(),
     to: [input.to],
     subject: input.noDeposit ? `Shoot booked · ${input.referenceId}` : `Booking deposit confirmed · ${input.referenceId}`,
     html,
@@ -95,7 +110,8 @@ export async function sendPaymentRequestEmail(input: { to: string[]; agentName: 
     ${button(input.deliveryUrl, "View &amp; Pay")}`);
 
   const result = await new Resend(config.apiKey).emails.send({
-    from: config.from,
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
     to: input.to,
     subject: `Your Media for ${input.propertyAddress} Is Ready — Invoice ${input.amount}`,
     html,
@@ -117,7 +133,8 @@ export async function sendPaymentReminderEmail(input: { to: string[]; agentName:
     <p style="color:#65726e;font-size:13px;">If you've already paid, thank you, and please disregard this message.</p>`);
 
   const result = await new Resend(config.apiKey).emails.send({
-    from: config.from,
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
     to: input.to,
     subject: `Reminder: Invoice ${input.amount} Due for ${input.propertyAddress}`,
     html,
@@ -137,7 +154,8 @@ export async function sendDeliveryReadyEmail(input: { to: string[]; agentName: s
     ${button(input.deliveryUrl, "Open Delivery Portal")}`);
 
   const result = await new Resend(config.apiKey).emails.send({
-    from: config.from,
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
     to: input.to,
     subject: `Your Media Assets for ${input.propertyAddress} Are Ready to Download`,
     html,
@@ -175,7 +193,8 @@ export async function sendDiscountEmail(input: {
     ${button(input.deliveryUrl, "View &amp; Pay")}`);
 
   const result = await new Resend(config.apiKey).emails.send({
-    from: config.from,
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
     to: input.to,
     subject: `Discount applied — ${input.propertyAddress} is now ${input.newAmount}`,
     html,
@@ -194,7 +213,8 @@ export async function sendTipNotificationEmail(input: { to: string[]; agentName:
     <p style="color:#65726e;font-size:13px;">This is separate from the invoice and appears in your Stripe dashboard.</p>`);
 
   const result = await new Resend(config.apiKey).emails.send({
-    from: config.from,
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
     to: input.to,
     subject: `Thank-you tip ${input.amount} — ${input.propertyAddress}`,
     html,
@@ -219,7 +239,7 @@ export async function sendPromoEmail(input: { to: string[]; subject: string; hea
 
   let sent = 0;
   for (const to of input.to) {
-    const result = await new Resend(config.apiKey).emails.send({ from: config.from, to: [to], subject: input.subject, html });
+    const result = await new Resend(config.apiKey).emails.send({ from: withDisplayName(config.from), replyTo: replyTo(), to: [to], subject: input.subject, html });
     if (!result.error) sent += 1;
   }
   return { status: "sent" as const, sent };
