@@ -39,6 +39,7 @@ export async function GET(request: Request) {
           // Bookings confirm instantly with no deposit; the full quoted total flows to the delivery invoice.
           balanceDue: record.total,
           packageSummary,
+          propertyDetails: record.booking.propertyDetails ?? null,
         };
       });
 

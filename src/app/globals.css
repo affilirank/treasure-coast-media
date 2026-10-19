@@ -793,6 +793,26 @@ img, video { display: block; max-width: 100%; }
 .ll-zoom { animation: ll-zoom 9s ease-out both; }
 .ll-progress { animation: ll-progress 5.5s linear both; }
 .ll-bounce { animation: ll-bounce 1.8s ease-in-out infinite; }
+
+/* Booking: county property record verification */
+.property-verify { border: 1px solid #cfe0d8; background: #f6faf8; padding: 14px 16px; gap: 9px; }
+.property-verify .verify-help { margin: 0; color: #505e59; font-size: 10px; line-height: 1.6; }
+.verify-status p { margin: 0; font-size: 10px; font-weight: 700; line-height: 1.5; }
+.verify-status .is-idle { color: #7c8783; font-weight: 500; }
+.verify-status .is-checking { color: #a98955; }
+.verify-status .is-found { color: #25613b; }
+.verify-status .is-warn { color: #8a6d1f; }
+.verify-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.verify-grid label { display: grid; gap: 5px; color: #505e59; font-size: 9px; font-weight: 700; }
+.verify-grid input { min-height: 38px; }
+.verify-note { margin: 0; color: #7c8783; font-size: 9px; line-height: 1.5; }
+.verify-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.verify-confirm { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 10px; font-weight: 700; cursor: pointer; }
+.verify-confirm input { width: 15px; height: 15px; min-height: 0; padding: 0; border: 1px solid #8ea79b; background: white; accent-color: #25613b; }
+.verify-recheck { border: 1px solid #c5aa7c; background: white; padding: 7px 12px; font-size: 9px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.verify-recheck:hover:not(:disabled) { background: var(--ink); color: white; }
+.verify-recheck:disabled { opacity: 0.5; cursor: default; }
+.verify-gate { margin: 0; color: #c5aa7c; font-size: 10px; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   .ll-rise, .ll-fade, .ll-zoom, .ll-progress, .ll-bounce { animation: none; }
 }

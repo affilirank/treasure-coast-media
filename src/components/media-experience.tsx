@@ -32,10 +32,13 @@ import {
   X,
 } from "lucide-react";
 import {
+  useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
+import { emptyPropertyDetails, type BookingPropertyDetails } from "@/lib/booking-property";
 import {
   commercialGallery,
   commercialGrowthServices,
@@ -138,6 +141,22 @@ function createRealEstateRetainers(): Record<RealEstateRetainerId, boolean> {
   return Object.fromEntries(
     realEstateRetainers.map(({ id }) => [id, false]),
   ) as Record<RealEstateRetainerId, boolean>;
+}
+
+/** Status of the county property-record check shown under the address field. */
+type PropertyStatus = "idle" | "checking" | "found" | "missing" | "error";
+
+type PropertyCheck = BookingPropertyDetails & { status: PropertyStatus };
+
+const initialPropertyCheck: PropertyCheck = { ...emptyPropertyDetails, status: "idle" };
+
+/** Splits "Street, city, ZIP" into its parts so we know what to look up. */
+function parseAddressInput(value: string): { street: string; city: string; zipCode: string } {
+  const zipCode = value.match(/\b\d{5}(?:-\d{4})?\b/)?.[0] ?? "";
+  const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
+  const street = parts[0] ?? "";
+  const city = parts[1]?.replace(/\s+\d{5}(?:-\d{4})?$/, "").trim() ?? "";
+  return { street, city, zipCode };
 }
 
 function Brand({ track }: { track: Track }) {
@@ -1211,12 +1230,18 @@ function BookingSection({
   promoApplied,
   onPromoInputChange,
   onApplyPromo,
+  property,
+  onPropertyChange,
+  onPropertyRecheck,
 }: {
   promoInput: string;
   promoMessage: string;
   promoApplied: boolean;
   onPromoInputChange: (value: string) => void;
   onApplyPromo: () => void;
+  property: PropertyCheck;
+  onPropertyChange: (patch: Partial<PropertyCheck>) => void;
+  onPropertyRecheck: () => void;
   track: Track;
   quote: ReturnType<typeof quoteRealEstate>;
   booking: boolean;
@@ -1268,6 +1293,52 @@ function BookingSection({
               />
             </div>
           ))}
+          {track === "real-estate" && (
+            <div className="form-field is-wide property-verify">
+              <label>Property details — check county records</label>
+              <p className="verify-help">
+                Type the street, city and ZIP above and we pull the facts from county property appraiser records.
+                What you confirm here becomes the listing’s tour page.
+              </p>
+              <div className="verify-status" role="status">
+                {property.status === "idle" && <p className="is-idle">Waiting for a full address — e.g. 8185 25th St, Vero Beach, 32966.</p>}
+                {property.status === "checking" && <p className="is-checking">Checking county property appraiser records…</p>}
+                {property.status === "found" && <p className="is-found">✓ Found in county records{property.source ? ` — ${property.source}` : ""}</p>}
+                {property.status === "missing" && <p className="is-warn">No county match for this address — enter what you know below; you can add the rest later.</p>}
+                {property.status === "error" && <p className="is-warn">County records are unavailable right now — you can still enter the details manually.</p>}
+              </div>
+              <div className="verify-grid">
+                <label>Beds
+                  <input inputMode="numeric" value={property.beds} placeholder="e.g. 3" onChange={(event) => onPropertyChange({ beds: event.target.value })} />
+                </label>
+                <label>Baths
+                  <input inputMode="decimal" value={property.baths} placeholder="e.g. 2.5" onChange={(event) => onPropertyChange({ baths: event.target.value })} />
+                </label>
+                <label>Interior sqft
+                  <input inputMode="numeric" value={property.sqft} placeholder="1,539" onChange={(event) => onPropertyChange({ sqft: event.target.value })} />
+                </label>
+                <label>Lot size
+                  <input value={property.lotSize} placeholder="1.01 acres" onChange={(event) => onPropertyChange({ lotSize: event.target.value })} />
+                </label>
+                <label>Year built
+                  <input inputMode="numeric" value={property.yearBuilt} placeholder="1980" onChange={(event) => onPropertyChange({ yearBuilt: event.target.value })} />
+                </label>
+                <label>Property type
+                  <input value={property.propertyType} placeholder="Single Family" onChange={(event) => onPropertyChange({ propertyType: event.target.value })} />
+                </label>
+              </div>
+              <p className="verify-note">Beds and baths aren’t published in county records — add them from the MLS if you have them.</p>
+              <div className="verify-actions">
+                <label className="verify-confirm">
+                  <input type="checkbox" checked={property.confirmed} onChange={(event) => onPropertyChange({ confirmed: event.target.checked })} />
+                  I’ve confirmed these details for the tour page
+                </label>
+                <button type="button" className="verify-recheck" onClick={onPropertyRecheck} disabled={property.status === "checking"}>
+                  {property.status === "checking" ? "Checking…" : "Re-check county records"}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="form-field is-wide">
             <label htmlFor="booking-accessNotes">Gate code, access details or notes</label>
             <textarea id="booking-accessNotes" name="accessNotes" value={values.accessNotes} placeholder="Optional details for the production team" onChange={(event) => onBookingChange("accessNotes", event.target.value)} />
@@ -1297,7 +1368,14 @@ function BookingSection({
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="booking-form-footer">
             <p>No deposit needed. Pick your date and we’ll confirm it right away by email. You only pay when your finished media is delivered.</p>
-            <button className="button-primary" type="submit" disabled={booking || !quote || !values.date || !values.time}>
+            {track === "real-estate" && !property.confirmed && (
+              <p className="verify-gate" role="status">Confirm the property details above to continue.</p>
+            )}
+            <button
+              className="button-primary"
+              type="submit"
+              disabled={booking || !quote || !values.date || !values.time || (track === "real-estate" && !property.confirmed)}
+            >
               {booking ? "Booking your shoot…" : "Confirm my shoot date"}<Send size={14} />
             </button>
           </div>
@@ -1398,6 +1476,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [retainers, setRetainers] = useState<Record<CommercialRetainerId, boolean>>(createCommercialRetainers);
   const [realEstateRetainersSelected, setRealEstateRetainersSelected] = useState<Record<RealEstateRetainerId, boolean>>(createRealEstateRetainers);
   const [bookingFields, setBookingFields] = useState<BookingFields>(initialBooking);
+  const [propertyCheck, setPropertyCheck] = useState<PropertyCheck>(initialPropertyCheck);
+  const lookupSeq = useRef(0);
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [promoInput, setPromoInput] = useState("");
@@ -1527,6 +1607,85 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     setBookingFields((current) => ({ ...current, [field]: value }));
   }
 
+  /** Looks the address up in county property appraiser records and seeds the tour facts. */
+  const runPropertyLookup = useCallback((street: string, city: string, zipCode: string) => {
+    const seq = (lookupSeq.current += 1);
+    setPropertyCheck((current) => {
+      const addressChanged = current.street !== street;
+      return {
+        ...current,
+        street,
+        city,
+        zipCode,
+        status: "checking",
+        // A different property means the old facts no longer apply.
+        ...(addressChanged
+          ? { sqft: "", lotSize: "", yearBuilt: "", propertyType: "", source: "", confirmed: false }
+          : {}),
+      };
+    });
+
+    fetch("/api/property/lookup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ address: street, city, zipCode }),
+      signal: AbortSignal.timeout(20000),
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        if (seq !== lookupSeq.current) return; // a newer lookup won
+        if (result?.error || typeof result?.matches !== "number") {
+          setPropertyCheck((current) => ({ ...current, status: "error" }));
+          return;
+        }
+        if (result.matches === 0) {
+          setPropertyCheck((current) => ({ ...current, status: "missing" }));
+          return;
+        }
+        setPropertyCheck((current) => ({
+          ...current,
+          // Seed only blanks — never overwrite something the agent typed.
+          sqft: current.sqft || (result.sqft ? String(result.sqft) : ""),
+          lotSize: current.lotSize || result.lotSize || "",
+          yearBuilt: current.yearBuilt || (result.yearBuilt ? String(result.yearBuilt) : ""),
+          propertyType: current.propertyType || result.propertyType || "",
+          source: typeof result.source === "string" ? result.source : "",
+          status: "found",
+        }));
+      })
+      .catch(() => {
+        if (seq !== lookupSeq.current) return;
+        setPropertyCheck((current) => ({ ...current, status: "error" }));
+      });
+  }, []);
+
+  // Debounced auto-lookup while the agent types the address.
+  useEffect(() => {
+    if (track !== "real-estate") return;
+    const { street, city, zipCode } = parseAddressInput(bookingFields.address);
+    if (street.length < 5 || (!city && !zipCode)) {
+      const reset = setTimeout(() => {
+        setPropertyCheck((current) => (current.status === "idle" ? current : { ...initialPropertyCheck }));
+      }, 400);
+      return () => clearTimeout(reset);
+    }
+    const timer = setTimeout(() => runPropertyLookup(street, city, zipCode), 750);
+    return () => clearTimeout(timer);
+  }, [bookingFields.address, track, runPropertyLookup]);
+
+  function recheckPropertyRecords() {
+    const { street, city, zipCode } = parseAddressInput(bookingFields.address);
+    if (street.length < 5) {
+      setPropertyCheck(initialPropertyCheck);
+      return;
+    }
+    runPropertyLookup(street, city, zipCode);
+  }
+
+  function updatePropertyCheck(patch: Partial<PropertyCheck>) {
+    setPropertyCheck((current) => ({ ...current, ...patch }));
+  }
+
   function applyPromoCode() {
     const resolved = resolvePromoDiscount(promoInput, oneTimeTotal, recurringTotal);
     if (!resolved) {
@@ -1580,7 +1739,28 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ track, booking: bookingFields, selection }),
+        body: JSON.stringify({
+          track,
+          booking: {
+            ...bookingFields,
+            propertyDetails: track === "real-estate"
+              ? {
+                street: propertyCheck.street,
+                city: propertyCheck.city,
+                zipCode: propertyCheck.zipCode,
+                beds: propertyCheck.beds,
+                baths: propertyCheck.baths,
+                sqft: propertyCheck.sqft,
+                lotSize: propertyCheck.lotSize,
+                yearBuilt: propertyCheck.yearBuilt,
+                propertyType: propertyCheck.propertyType,
+                source: propertyCheck.source,
+                confirmed: propertyCheck.confirmed,
+              }
+              : null,
+          },
+          selection,
+        }),
       });
       const result = await response.json() as Omit<BookingReceipt, "booking"> & { error?: string; checkoutUrl?: string; status?: string; depositAmount?: number; depositPercent?: number };
       if (!response.ok) throw new Error(result.error ?? "Your request could not be sent. Please try again.");
@@ -1733,6 +1913,9 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             promoApplied={promoApplied && Boolean(promo)}
             onPromoInputChange={setPromoInput}
             onApplyPromo={applyPromoCode}
+            property={propertyCheck}
+            onPropertyChange={updatePropertyCheck}
+            onPropertyRecheck={recheckPropertyRecords}
           />
           <FaqSection track={track} />
           <SiteFooter track={track} />

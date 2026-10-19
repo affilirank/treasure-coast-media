@@ -1,5 +1,8 @@
 import { getPrivateJson, putPrivateJson } from "@/lib/private-blob";
 import type { QuoteItem, Track } from "@/lib/site-data";
+import type { BookingPropertyDetails } from "@/lib/booking-property";
+
+export type { BookingPropertyDetails };
 
 export type StoredBooking = {
   referenceId: string;
@@ -14,6 +17,7 @@ export type StoredBooking = {
     phone: string;
     company: string;
     accessNotes: string;
+    propertyDetails?: BookingPropertyDetails | null;
   };
   selection: Record<string, unknown>;
   items: QuoteItem[];

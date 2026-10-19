@@ -42,6 +42,21 @@ export async function POST(request: Request) {
     phone: clean(body.booking.phone, 40),
     company: clean(body.booking.company, 160),
     accessNotes: clean(body.booking.accessNotes, 1000),
+    propertyDetails: isRecord(body.booking.propertyDetails)
+      ? {
+        street: clean(body.booking.propertyDetails.street),
+        city: clean(body.booking.propertyDetails.city),
+        zipCode: clean(body.booking.propertyDetails.zipCode, 12),
+        beds: clean(body.booking.propertyDetails.beds, 8),
+        baths: clean(body.booking.propertyDetails.baths, 8),
+        sqft: clean(body.booking.propertyDetails.sqft, 12),
+        lotSize: clean(body.booking.propertyDetails.lotSize, 40),
+        yearBuilt: clean(body.booking.propertyDetails.yearBuilt, 8),
+        propertyType: clean(body.booking.propertyDetails.propertyType, 60),
+        source: clean(body.booking.propertyDetails.source, 160),
+        confirmed: body.booking.propertyDetails.confirmed === true,
+      }
+      : null,
   };
 
   if (

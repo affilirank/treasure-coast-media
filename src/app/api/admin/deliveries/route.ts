@@ -15,6 +15,13 @@ function text(value: unknown, max: number, required = false) {
   return trimmed.slice(0, max);
 }
 
+/** Optional numeric tour-detail fields; blanks become null. */
+function numOrNull(value: unknown): number | null {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 function isKey(value: unknown): value is string {
   return typeof value === "string" && UPLOAD_KEY_PATTERN.test(value);
 }
@@ -93,6 +100,13 @@ export async function POST(request: Request) {
       agent_headshot_url: headshot,
       package_type,
       invoice_amount: Math.round(invoice_amount * 100) / 100,
+      // Tour page facts (verified at booking time by the agent).
+      beds: numOrNull(input.beds),
+      baths: numOrNull(input.baths),
+      sqft: numOrNull(input.sqft),
+      lot_size: text(input.lot_size, 40) || null,
+      year_built: numOrNull(input.year_built),
+      property_type: text(input.property_type, 60) || null,
     })
     .select("*")
     .single<Listing>();

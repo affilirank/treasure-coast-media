@@ -11,9 +11,15 @@ type AssetPlan = { asset_type: AssetType; full: UploadJob; web: UploadJob; previ
 type Links = { delivery: string; mls: string; showcase: string };
 
 const PACKAGES = ["HDR Photos", "HDR Photos + Drone", "HDR Photos + Drone + Floor Plan", "Full Production (Photos, Drone, Floor Plan, Video)"];
+type BookingPropertyDetails = {
+  street: string; city: string; zipCode: string;
+  beds: string; baths: string; sqft: string; lotSize: string; yearBuilt: string; propertyType: string;
+  source: string; confirmed: boolean;
+};
 type Booking = {
   referenceId: string; track: string; shootDate: string; address: string; zip: string; agentName: string; agentEmail: string; agentPhone: string;
   brokerage: string; package: string; originalTotal: number; promoCode: string | null; discountAmount: number; total: number; balanceDue: number;
+  propertyDetails?: BookingPropertyDetails | null;
 };
 
 const input = "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-amber-600 focus:outline-none";
@@ -129,6 +135,8 @@ export default function NewDeliveryForm() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingId, setBookingId] = useState("");
+  const [tour, setTour] = useState({ beds: "", baths: "", sqft: "", lot_size: "", year_built: "", property_type: "" });
+  const [lookupStatus, setLookupStatus] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/bookings")
@@ -145,8 +153,9 @@ export default function NewDeliveryForm() {
     if (!booking) return;
     setFields((f) => ({
       ...f,
-      property_address: booking.address,
-      zip_code: booking.zip || f.zip_code,
+      property_address: booking.propertyDetails?.street || booking.address,
+      city: booking.propertyDetails?.city || f.city,
+      zip_code: booking.propertyDetails?.zipCode || booking.zip || f.zip_code,
       agent_name: booking.agentName,
       agent_email: booking.agentEmail,
       agent_phone: booking.agentPhone,
@@ -154,6 +163,55 @@ export default function NewDeliveryForm() {
       package_type: booking.package || f.package_type,
       invoice_amount: booking.balanceDue > 0 ? String(booking.balanceDue) : "",
     }));
+    const details = booking.propertyDetails;
+    if (details) {
+      setTour({
+        beds: details.beds ?? "",
+        baths: details.baths ?? "",
+        sqft: details.sqft ?? "",
+        lot_size: details.lotSize ?? "",
+        year_built: details.yearBuilt ?? "",
+        property_type: details.propertyType ?? "",
+      });
+      setLookupStatus(details.confirmed
+        ? `✓ Prefilled from the agent’s verified booking${details.source ? ` — ${details.source}` : ""}.`
+        : details.source
+          ? `Prefilled from ${details.source} (not yet confirmed by the agent).`
+          : "Prefilled from the booking.");
+    } else {
+      setTour({ beds: "", baths: "", sqft: "", lot_size: "", year_built: "", property_type: "" });
+      setLookupStatus("");
+    }
+  }
+
+  const setTourField = (name: keyof typeof tour) => (e: { target: { value: string } }) =>
+    setTour((t) => ({ ...t, [name]: e.target.value }));
+
+  async function lookupRecords() {
+    setLookupStatus("Checking county property appraiser records…");
+    try {
+      const response = await fetch("/api/property/lookup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ address: fields.property_address, city: fields.city, zipCode: fields.zip_code }),
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json();
+      if (result?.matches > 0) {
+        setTour((t) => ({
+          ...t,
+          sqft: t.sqft || (result.sqft ? String(result.sqft) : ""),
+          lot_size: t.lot_size || result.lotSize || "",
+          year_built: t.year_built || (result.yearBuilt ? String(result.yearBuilt) : ""),
+          property_type: t.property_type || result.propertyType || "",
+        }));
+        setLookupStatus(`✓ Found — ${result.source ?? "county records"}. Review the values below.`);
+      } else {
+        setLookupStatus("No county match for this address — enter the details manually.");
+      }
+    } catch {
+      setLookupStatus("County lookup unavailable — enter the details manually.");
+    }
   }
 
   const set = (name: keyof typeof fields) => (e: { target: { value: string } }) => setFields((f) => ({ ...f, [name]: e.target.value }));
@@ -206,7 +264,7 @@ export default function NewDeliveryForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          listing: { ...fields, send_email: sendEmail },
+          listing: { ...fields, ...tour, send_email: sendEmail },
           assets: plans.map((p) => ({
             asset_type: p.asset_type,
             full_key: keyOf.get(p.full)!.key,
@@ -278,6 +336,31 @@ export default function NewDeliveryForm() {
             <datalist id="packages">{PACKAGES.map((p) => <option key={p} value={p} />)}</datalist>
           </Field>
           <Field label="Invoice Total ($)"><input required type="number" min="0.01" step="0.01" className={input} value={fields.invoice_amount} onChange={set("invoice_amount")} /></Field>
+        </section>
+
+        <section className="rounded-lg border border-neutral-300 bg-neutral-50 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-neutral-800">Tour page details</p>
+              <p className="text-xs text-neutral-600">Facts that appear on the branded &amp; MLS tour pages. Prefilled from the booking or county records — review before creating.</p>
+            </div>
+            <button
+              type="button"
+              onClick={lookupRecords}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:border-amber-600"
+            >
+              Fetch county records
+            </button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Beds"><input className={input} value={tour.beds} onChange={setTourField("beds")} placeholder="e.g. 3" /></Field>
+            <Field label="Baths"><input className={input} value={tour.baths} onChange={setTourField("baths")} placeholder="e.g. 2.5" /></Field>
+            <Field label="Interior sqft"><input className={input} value={tour.sqft} onChange={setTourField("sqft")} placeholder="1,539" /></Field>
+            <Field label="Lot size"><input className={input} value={tour.lot_size} onChange={setTourField("lot_size")} placeholder="1.01 acres" /></Field>
+            <Field label="Year built"><input className={input} value={tour.year_built} onChange={setTourField("year_built")} placeholder="1980" /></Field>
+            <Field label="Property type"><input className={input} value={tour.property_type} onChange={setTourField("property_type")} placeholder="Single Family" /></Field>
+          </div>
+          {lookupStatus && <p className="mt-3 text-xs text-neutral-700">{lookupStatus}</p>}
         </section>
 
         <section className="grid gap-5 sm:grid-cols-2">
