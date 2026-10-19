@@ -46,14 +46,32 @@ const COUNTY_NAMES: Record<number, string> = {
   55: "St. Lucie County",
 };
 
-function normalizeAddressForQuery(address: string): string {
-  return address
-    .toUpperCase()
-    .replace(/[^\w\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\b(STREET|ST|ROAD|RD|AVENUE|AVE|BOULEVARD|BLVD|DRIVE|DR|COURT|CT|CIRCLE|CIR|LANE|LN|PLACE|PL|TERRACE|TER|PARKWAY|PKWY|HIGHWAY|HWY)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+const STREET_SUFFIXES = new Set([
+  "STREET", "ST", "ROAD", "RD", "AVENUE", "AVE", "BOULEVARD", "BLVD", "DRIVE", "DR",
+  "COURT", "CT", "CIRCLE", "CIR", "LANE", "LN", "PLACE", "PL", "TERRACE", "TER",
+  "PARKWAY", "PKWY", "HIGHWAY", "HWY", "WAY", "TRAIL", "TR", "RUN", "CRES", "CRESCENT",
+]);
+const UNIT_WORDS = new Set(["UNIT", "APT", "STE", "SUITE", "BLDG"]);
+
+/**
+ * Builds a spacing-tolerant SQL predicate for PHY_ADDR1.
+ * County records are messy ("149  25th St" with double spaces, "ST" vs "STREET"),
+ * so we anchor on the leading house number and require every name token.
+ */
+function buildAddressWhere(raw: string): string {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  const tokens = clean.split(" ");
+  const clauses: string[] = [];
+  if (/^\d+$/.test(tokens[0])) {
+    clauses.push(`PHY_ADDR1 LIKE '${tokens[0]} %'`);
+    tokens.shift();
+  }
+  for (const token of tokens) {
+    if (STREET_SUFFIXES.has(token) || UNIT_WORDS.has(token)) continue;
+    clauses.push(`PHY_ADDR1 LIKE '%${token}%'`);
+  }
+  return clauses.join(" AND ");
 }
 
 function inferLotSizeAcres(lndSqft: number | null | undefined): string | null {
@@ -149,8 +167,8 @@ export async function lookupPropertyByAddress(
   city = city || derivedCity;
   zipCode = zipCode || derivedZip;
 
-  const normalized = normalizeAddressForQuery(streetOnly);
-  if (!normalized) {
+  const addressWhere = buildAddressWhere(streetOnly);
+  if (!addressWhere) {
     return {
       address: address || null,
       city: city || null,
@@ -167,26 +185,30 @@ export async function lookupPropertyByAddress(
     };
   }
 
-  let layerId: number | null = null;
-  if (city) {
-    const c = city.toUpperCase().trim();
-    if (COUNTY_LAYERS[c]) layerId = COUNTY_LAYERS[c].layerId;
-  }
-  if (!layerId && zipCode) {
-    // basic FL Treasure Coast zip ranges
-    const z = zipCode.replace(/[^0-9]/g, "");
-    if (z.startsWith("329")) layerId = 29; // Indian River
-    else if (z.startsWith("349")) layerId = 41; // Martin
-  }
+  // Choose which county layers to search: city is authoritative, ZIP disambiguates
+  // the shared 349xx range (Martin + St. Lucie), then fall back to all three.
+  const layersToTry: number[] = [];
+  const push = (layerId: number | undefined) => {
+    if (layerId && !layersToTry.includes(layerId)) layersToTry.push(layerId);
+  };
+  if (city) push(COUNTY_LAYERS[city.toUpperCase().trim()]?.layerId);
+  const zipDigits = (zipCode ?? "").replace(/[^0-9]/g, "");
+  if (zipDigits.startsWith("329")) push(29);
+  else if (zipDigits.startsWith("349")) { push(41); push(55); }
+  if (layersToTry.length === 0) { push(29); push(41); push(55); }
 
-  // If no layer inferred, try all three treasure coast counties? but slow if all queried; prefer IRC first if zip 329xx
-  const layersToTry: number[] = layerId ? [layerId] : [29, 41, 55];
+  // Pass 1 scopes by the record's own ZIP when known (stops cross-county street-name
+  // collisions); pass 2 retries without the ZIP in case of a typo or a blank record ZIP.
+  const attempts: { layerId: number; zipScoped: boolean }[] = [
+    ...(zipDigits ? layersToTry.map((layerId) => ({ layerId, zipScoped: true })) : []),
+    ...layersToTry.map((layerId) => ({ layerId, zipScoped: false })),
+  ];
 
-  for (const lid of layersToTry) {
+  for (const attempt of attempts) {
     try {
-      const url = new URL(`${EHWATER_BASE}/${lid}/query`);
-      // anchored match on PHY_ADDR1 is faster than leading wildcard
-      url.searchParams.set("where", `PHY_ADDR1 LIKE '${normalized}%'`);
+      const url = new URL(`${EHWATER_BASE}/${attempt.layerId}/query`);
+      const zipClause = attempt.zipScoped ? ` AND PHY_ZIPCD = ${Number(zipDigits)}` : "";
+      url.searchParams.set("where", `${addressWhere}${zipClause}`);
       url.searchParams.set(
         "outFields",
         "PHY_ADDR1,PHY_CITY,PHY_ZIPCD,TOT_LVG_AR,ACT_YR_BLT,EFF_YR_BLT,LND_SQFOOT,DOR_UC,SALE_PRC1,SALE_YR1,JV,OWN_NAME"
@@ -219,7 +241,7 @@ export async function lookupPropertyByAddress(
         yearBuilt,
         propertyType,
         listPrice: toNum(attrs.SALE_PRC1) || null,
-        source: `County Property Appraiser records · ${COUNTY_NAMES[lid] ?? "Florida"}`,
+        source: `County Property Appraiser records · ${COUNTY_NAMES[attempt.layerId] ?? "Florida"}`,
         matches: features.length,
       };
     } catch {
