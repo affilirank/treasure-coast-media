@@ -8,7 +8,7 @@ type Customer = {
   last_activity_at: string | null; marketing_opt_in: boolean;
 };
 
-type OfferOption = { id: string; name: string; share_token: string; is_active: boolean };
+type OfferOption = { id: string; name: string; share_token: string; is_active: boolean; promotion_code: string | null };
 
 const btn = "rounded-md border border-neutral-300 px-3 py-1 text-xs font-semibold text-neutral-800 disabled:opacity-50";
 const field = "w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900";
@@ -127,12 +127,12 @@ export default function CustomersAdmin() {
         </div>
         <label className="mt-3 block text-sm">Message<textarea className={`${field} mt-1`} rows={4} value={body} onChange={(event) => setBody(event.target.value)} /></label>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <label className="text-sm">Promo code<input className={field} value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder="SPRING25" /></label>
+          <label className="text-sm">Promo code<input className={field} value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder={offers.find((offer) => offer.share_token === offerToken)?.promotion_code || "SPRING25"} /></label>
           <label className="text-sm sm:col-span-2">
             Attach an offer
             <select className={`${field} mt-1`} value={offerToken} onChange={(event) => setOfferToken(event.target.value)}>
               <option value="">None</option>
-              {offers.filter((offer) => offer.is_active).map((offer) => <option key={offer.id} value={offer.share_token}>{offer.name}</option>)}
+              {offers.filter((offer) => offer.is_active).map((offer) => <option key={offer.id} value={offer.share_token}>{offer.name}{offer.promotion_code ? ` — code ${offer.promotion_code}` : ""}</option>)}
             </select>
           </label>
         </div>

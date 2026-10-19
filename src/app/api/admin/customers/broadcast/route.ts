@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import { listCustomers } from "@/lib/customers";
-import { getOfferByToken } from "@/lib/offers";
-import { sendPromoEmail } from "@/lib/email";
+import { computeOfferTotals, getOfferByToken, normalizeItems } from "@/lib/offers";
+import { sendPromoEmail, type PromoOfferCard } from "@/lib/email";
 import { siteUrl } from "@/lib/delivery";
 
 export const runtime = "nodejs";
@@ -31,10 +31,26 @@ export async function POST(request: Request) {
   if (!subject || !text) return Response.json({ error: "Add a subject and message." }, { status: 400 });
 
   let offerUrl: string | null = null;
+  let offerCard: PromoOfferCard | null = null;
+  let offerCode: string | null = null;
   if (typeof body.offerToken === "string" && body.offerToken) {
     const offer = await getOfferByToken(body.offerToken);
-    if (offer) offerUrl = `${siteUrl()}/offer/${offer.share_token}`;
+    if (offer) {
+      offerUrl = `${siteUrl()}/offer/${offer.share_token}`;
+      const items = normalizeItems(offer.items);
+      const totals = computeOfferTotals(items, offer.discount_type, Number(offer.discount_value));
+      offerCard = {
+        name: offer.name,
+        items,
+        subtotal: Number(totals.subtotal),
+        savings: Number(totals.savings),
+        total: Number(totals.total),
+      };
+      offerCode = offer.promotion_code ? offer.promotion_code.toUpperCase() : null;
+    }
   }
+  // A code typed by hand wins; otherwise the offer's own promotion code goes out with it.
+  const finalCode = code || offerCode;
 
   let recipients = directEmails;
   if (recipients.length === 0) {
@@ -53,7 +69,7 @@ export async function POST(request: Request) {
   if (recipients.length === 0) return Response.json({ error: "No recipients matched." }, { status: 400 });
 
   try {
-    const result = await sendPromoEmail({ to: recipients, subject, heading, body: text, code, offerUrl });
+    const result = await sendPromoEmail({ to: recipients, subject, heading, body: text, code: finalCode, offerUrl, offer: offerCard });
     if (result.status !== "sent") return Response.json({ error: "Email is not configured." }, { status: 503 });
     return Response.json({ sent: result.sent, recipients: recipients.length }, { headers: { "cache-control": "no-store" } });
   } catch {

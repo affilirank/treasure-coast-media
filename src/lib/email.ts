@@ -36,20 +36,18 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
   }
 
   const resend = new Resend(apiKey);
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#111827;">
-      <h2 style="margin-bottom:12px;">${input.noDeposit ? "Your shoot is booked" : "Your booking deposit is confirmed"}</h2>
-      <p>Hi ${input.name},</p>
-      <p>${input.noDeposit ? "Your shoot date is reserved. No deposit is needed. You only pay when your finished media is ready for delivery." : "We received your deposit and your booking is now confirmed."} Our production team will contact you to finalize access and timing.</p>
-      <p><strong>Reference:</strong> ${input.referenceId}</p>
-      <p><strong>Project:</strong> ${input.track === "real-estate" ? "Property media" : "Commercial production"}</p>
-      <p><strong>Location:</strong> ${input.address}</p>
-      <p><strong>Date:</strong> ${input.date} at ${input.time}</p>
-      <p><strong>Estimated project total:</strong> $${input.total.toLocaleString()}</p>
-      ${input.recurring > 0 ? `<p><strong>Recurring:</strong> $${input.recurring.toLocaleString()}/mo</p>` : ""}
-      <p>We’ll reach out to confirm details and next steps shortly.</p>
-    </div>
-  `;
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">${input.noDeposit ? "Your shoot is booked" : "Your booking deposit is confirmed"}</h2>
+    <p>Hi ${escapeHtml(input.name)},</p>
+    <p>${input.noDeposit ? "Your shoot date is reserved. No deposit is needed. You only pay when your finished media is ready for delivery." : "We received your deposit and your booking is now confirmed."} Our production team will contact you to finalize access and timing.</p>
+    <p><strong>Reference:</strong> ${input.referenceId}</p>
+    <p><strong>Project:</strong> ${input.track === "real-estate" ? "Property media" : "Commercial production"}</p>
+    <p><strong>Location:</strong> ${escapeHtml(input.address)}</p>
+    <p><strong>Date:</strong> ${input.date} at ${input.time}</p>
+    <p><strong>Estimated project total:</strong> $${input.total.toLocaleString()}</p>
+    ${input.recurring > 0 ? `<p><strong>Recurring:</strong> $${input.recurring.toLocaleString()}/mo</p>` : ""}
+    <p>We’ll reach out to confirm details and next steps shortly.</p>
+  `);
 
   const result = await resend.emails.send({
     from: withDisplayName(from),
@@ -116,13 +114,53 @@ function emailShell(body: string) {
         <img src="${logoUrl()}" alt="Merit Media &amp; Marketing" width="72" height="72" style="border-radius:8px;" />
       </div>
       <div style="padding:24px 0;">${body}</div>
-      <p style="color:#65726e;font-size:12px;border-top:1px solid #dfe5e1;padding-top:12px;">Merit Media &amp; Marketing</p>
+      <p style="color:#65726e;font-size:12px;border-top:1px solid #dfe5e1;padding-top:12px;">Merit Media &amp; Marketing<br/>8185 25th St, Vero Beach, FL 32966</p>
     </div>`;
 }
 
 function button(href: string, label: string) {
   return `<p><a href="${escapeHtml(href)}" style="display:inline-block;background:#14201e;color:#e1c697;padding:12px 22px;text-decoration:none;font-weight:bold;">${label}</a></p>
     <p style="color:#65726e;font-size:13px;">Or copy this link: ${escapeHtml(href)}</p>`;
+}
+
+function money(value: number) {
+  const n = Math.round(Number(value) * 100) / 100;
+  return `$${n % 1 === 0 ? n.toLocaleString() : n.toFixed(2)}`;
+}
+
+export type PromoOfferCard = {
+  name: string;
+  items: { name: string; price: number; qty: number; free?: boolean }[];
+  subtotal: number;
+  savings: number;
+  total: number;
+};
+
+/** Itemized offer preview inside promo emails — mirrors the /offer/[token] page. */
+function offerCardHtml(offer: PromoOfferCard) {
+  const rows = offer.items
+    .map((item) => {
+      const line = item.price * item.qty;
+      const name = escapeHtml(item.name) + (item.qty > 1 ? ` × ${item.qty}` : "");
+      const price = item.free
+        ? `<span style="color:#8a938f;text-decoration:line-through;">${money(line)}</span> <strong style="color:#0f766e;">Free</strong>`
+        : money(line);
+      return `<tr><td style="padding:9px 0;border-bottom:1px solid #f0ede6;font-size:14px;color:#111827;">${name}</td><td align="right" style="padding:9px 0;border-bottom:1px solid #f0ede6;font-size:14px;color:#111827;white-space:nowrap;">${price}</td></tr>`;
+    })
+    .join("");
+
+  return `
+    <div style="border:1px solid #e5e0d5;border-radius:10px;padding:20px 18px;background:#fff;margin:20px 0;">
+      <p style="margin:0 0 4px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8a938f;">Offer prepared for you</p>
+      <p style="margin:0 0 10px;font-size:16px;font-weight:700;color:#14201e;">${escapeHtml(offer.name)}</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
+      <div style="text-align:center;margin-top:16px;">
+        <p style="margin:0;color:#8a938f;font-size:14px;"><span style="text-decoration:line-through;">${money(offer.subtotal)}</span></p>
+        <p style="margin:6px 0 4px;color:#0f766e;font-size:14px;font-weight:bold;">You save ${money(offer.savings)}</p>
+        <p style="margin:4px 0 0;font-size:32px;font-weight:800;color:#14201e;border-top:2px solid #c4a16a;padding-top:10px;">${money(offer.total)}</p>
+        <p style="margin:6px 0 0;color:#65726e;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Offer price</p>
+      </div>
+    </div>`;
 }
 
 function emailConfig() {
@@ -305,7 +343,15 @@ export async function sendSocialPackageNotificationEmail(input: { to: string[]; 
   return { status: "sent" as const };
 }
 
-export async function sendPromoEmail(input: { to: string[]; subject: string; heading: string; body: string; code?: string | null; offerUrl?: string | null }) {
+export async function sendPromoEmail(input: {
+  to: string[];
+  subject: string;
+  heading: string;
+  body: string;
+  code?: string | null;
+  offerUrl?: string | null;
+  offer?: PromoOfferCard | null;
+}) {
   const config = emailConfig();
   if (!config) return { status: "preview" as const, sent: 0 };
 
@@ -313,11 +359,16 @@ export async function sendPromoEmail(input: { to: string[]; subject: string; hea
     ? `<p style="text-align:center;margin:20px 0;"><span style="display:inline-block;border:1px dashed #c4a16a;background:#fbf7ef;color:#14201e;padding:12px 20px;font-weight:bold;letter-spacing:1px;">${escapeHtml(input.code)}</span></p>`
     : "";
 
+  const card = input.offer ? offerCardHtml(input.offer) : "";
+  const optOut = `<p style="color:#8a938f;font-size:11px;margin-top:18px;line-height:1.6;">You're receiving this because you're a Merit Media &amp; Marketing client. Reply with "unsubscribe" and we'll remove you from future promotions.</p>`;
+
   const html = emailShell(`
     <h2 style="margin:0 0 12px;">${escapeHtml(input.heading)}</h2>
     <div style="line-height:1.7;white-space:pre-line;">${escapeHtml(input.body)}</div>
+    ${card}
     ${codeBlock}
-    ${input.offerUrl ? button(input.offerUrl, "View This Offer") : ""}`);
+    ${input.offerUrl ? button(input.offerUrl, "View This Offer") : ""}
+    ${optOut}`);
 
   let sent = 0;
   for (const to of input.to) {
