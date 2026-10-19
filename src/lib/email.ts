@@ -57,6 +57,7 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
     to: [input.to],
     subject: input.noDeposit ? `Shoot booked · ${input.referenceId}` : `Booking deposit confirmed · ${input.referenceId}`,
     html,
+    text: textFromHtml(html),
   });
 
   if (result.error) {
@@ -68,6 +69,38 @@ export async function sendBookingConfirmation(input: BookingEmailInput) {
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
+/**
+ * Multipart mail (text/plain + text/html) is treated as more trustworthy than
+ * HTML-only, especially by Outlook/SmartScreen. Derive a readable text part
+ * from the same HTML so both versions can never drift apart.
+ */
+function textFromHtml(html: string) {
+  const withLinks = html.replace(
+    /<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi,
+    (_m, href: string, label: string) => `${label.trim()} (${href})`,
+  );
+  const decoded = withLinks
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<img\b[^>]*>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr|table|ul|ol)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#x([0-9a-f]+);/gi, (_m, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_m, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+  return decoded
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function logoUrl() {
@@ -115,6 +148,7 @@ export async function sendPaymentRequestEmail(input: { to: string[]; agentName: 
     to: input.to,
     subject: `Your Media for ${input.propertyAddress} Is Ready — Invoice ${input.amount}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send payment request email");
   return { status: "sent" as const };
@@ -138,6 +172,7 @@ export async function sendPaymentReminderEmail(input: { to: string[]; agentName:
     to: input.to,
     subject: `Reminder: Invoice ${input.amount} Due for ${input.propertyAddress}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send reminder email");
   return { status: "sent" as const };
@@ -159,6 +194,7 @@ export async function sendDeliveryReadyEmail(input: { to: string[]; agentName: s
     to: input.to,
     subject: `Your Media Assets for ${input.propertyAddress} Are Ready to Download`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send delivery email");
   return { status: "sent" as const };
@@ -198,6 +234,7 @@ export async function sendDiscountEmail(input: {
     to: input.to,
     subject: `Discount applied — ${input.propertyAddress} is now ${input.newAmount}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send discount email");
   return { status: "sent" as const };
@@ -218,6 +255,7 @@ export async function sendTipNotificationEmail(input: { to: string[]; agentName:
     to: input.to,
     subject: `Thank-you tip ${input.amount} — ${input.propertyAddress}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send tip notification");
   return { status: "sent" as const };
@@ -240,6 +278,7 @@ export async function sendSocialPackageConfirmationEmail(input: { to: string[]; 
     to: input.to,
     subject: `Social package booked — ${input.propertyAddress}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send social confirmation");
   return { status: "sent" as const };
@@ -260,6 +299,7 @@ export async function sendSocialPackageNotificationEmail(input: { to: string[]; 
     to: input.to,
     subject: `Social package ${input.amount} — ${input.propertyAddress}`,
     html,
+    text: textFromHtml(html),
   });
   if (result.error) throw new Error(result.error.message ?? "Failed to send social notification");
   return { status: "sent" as const };
@@ -281,7 +321,7 @@ export async function sendPromoEmail(input: { to: string[]; subject: string; hea
 
   let sent = 0;
   for (const to of input.to) {
-    const result = await new Resend(config.apiKey).emails.send({ from: withDisplayName(config.from), replyTo: replyTo(), to: [to], subject: input.subject, html });
+    const result = await new Resend(config.apiKey).emails.send({ from: withDisplayName(config.from), replyTo: replyTo(), to: [to], subject: input.subject, html, text: textFromHtml(html) });
     if (!result.error) sent += 1;
   }
   return { status: "sent" as const, sent };
