@@ -23,6 +23,8 @@ type Props = {
   headline: string;
   description: string;
   headshotUrl: string | null;
+  socialPackage: string | null;
+  returnedSocial: boolean;
 };
 
 const ZIP_NAMES: Record<Kind, string> = { mls: "MLS-Ready", print: "Full-Res-Print", floorplan: "Floor-Plan" };
@@ -48,7 +50,7 @@ async function fetchDownloads(token: string, kind: Kind | "video") {
   return result.files as { name: string; url: string }[];
 }
 
-export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot }: Props) {
+export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot, socialPackage, returnedSocial }: Props) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -66,6 +68,8 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
   const [tourBusy, setTourBusy] = useState(false);
   const [tourSaved, setTourSaved] = useState(false);
   const [tourError, setTourError] = useState("");
+  const [socialBusy, setSocialBusy] = useState<string | null>(null);
+  const [socialError, setSocialError] = useState("");
 
   // After Stripe redirects back, the webhook may take a few seconds to mark the listing paid.
   useEffect(() => {
@@ -140,6 +144,25 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
     await navigator.clipboard.writeText(value);
     setCopied(label);
     setTimeout(() => setCopied(""), 1500);
+  }
+
+  // One-time social media upsell: starts Stripe checkout for the chosen package.
+  async function claimSocial(plan: "starter" | "reels") {
+    setSocialBusy(plan);
+    setSocialError("");
+    try {
+      const response = await fetch("/api/social", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, package: plan }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.url) throw new Error(result.error ?? "Unable to start checkout.");
+      window.location.assign(result.url);
+    } catch (cause) {
+      setSocialError(cause instanceof Error ? cause.message : "Unable to start checkout.");
+      setSocialBusy(null);
+    }
   }
 
   async function payTip(value: number) {
@@ -369,6 +392,64 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
               </div>
             </div>
             {tipError && <p role="alert" className="mt-3 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{tipError}</p>}
+          </section>
+        )}
+
+        {isPaid && (
+          <section className="mb-10 rounded-lg border border-[#c4a16a]/30 bg-[#c4a16a]/5 p-5">
+            <h2 className="text-lg font-semibold text-[#e1c697]">One-time offer — 30 days of social media for this listing</h2>
+            <p className="mt-1 max-w-2xl text-sm text-neutral-300">
+              Hand off the posting grind. We run this property on Facebook and Instagram for a full month — branded with your
+              name and brokerage. Claim it right here, once, for this listing.
+            </p>
+            {socialPackage || returnedSocial ? (
+              <div className="mt-4 rounded-md border border-emerald-500/40 bg-emerald-900/20 p-4">
+                <p className="font-semibold text-emerald-300">✓ Claimed — your 30-day social plan is booked.</p>
+                <p className="mt-1 text-sm text-neutral-300">
+                  Your receipt is on its way from Stripe, and we&apos;ll reach out within one business day to line up the posts
+                  and get your 30 days on Facebook and Instagram started.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 rounded-md border border-[#c4a16a]/25 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">30-Day Social Plan</p>
+                  <p className="text-3xl font-semibold text-neutral-100">$99 <span className="text-sm font-normal text-neutral-400">one-time</span></p>
+                  <ul className="grid list-disc gap-1 pl-5 text-sm text-neutral-300">
+                    <li>30 days of ready-to-post content for Facebook &amp; Instagram</li>
+                    <li>Branded with your name and brokerage</li>
+                    <li>Captions, hashtags and posting schedule included</li>
+                  </ul>
+                  <button
+                    disabled={socialBusy !== null}
+                    onClick={() => claimSocial("starter")}
+                    className={`${btn} mt-1 justify-center border-[#c4a16a] text-[#e1c697] hover:bg-[#c4a16a]/15`}
+                  >
+                    {socialBusy === "starter" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Claim for $99
+                  </button>
+                </div>
+                <div className="relative grid gap-3 rounded-md border border-[#c4a16a] bg-[#c4a16a]/10 p-4">
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-[#c4a16a] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#14201e]">
+                    Best value
+                  </span>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#e1c697]">30-Day Social Plan + 7 Premium Reels</p>
+                  <p className="text-3xl font-semibold text-neutral-100">$169 <span className="text-sm font-normal text-neutral-400">one-time</span></p>
+                  <ul className="grid list-disc gap-1 pl-5 text-sm text-neutral-300">
+                    <li>Everything in the 30-Day Social Plan</li>
+                    <li><strong className="text-[#e1c697]">7 premium branded reels</strong> — vertical and Reels/TikTok-ready</li>
+                    <li>Ideal for launch-week momentum</li>
+                  </ul>
+                  <button
+                    disabled={socialBusy !== null}
+                    onClick={() => claimSocial("reels")}
+                    className={`${btn} mt-1 justify-center border-[#c4a16a] bg-[#c4a16a] text-[#14201e]`}
+                  >
+                    {socialBusy === "reels" ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Claim for $169
+                  </button>
+                </div>
+              </div>
+            )}
+            {socialError && <p role="alert" className="mt-3 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{socialError}</p>}
           </section>
         )}
 

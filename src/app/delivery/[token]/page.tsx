@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DeliveryPage({ params, searchParams }: PageProps<"/delivery/[token]">) {
   const { token } = await params;
-  const { paid, tipped } = await searchParams;
+  const { paid, tipped, social } = await searchParams;
   const found = await getListingByToken(token);
   if (!found) notFound();
   const { listing, assets } = found;
@@ -42,6 +42,8 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
       headline={listing.headline ?? ""}
       description={listing.description ?? ""}
       headshotUrl={await resolveHeadshotUrl(listing.agent_headshot_url)}
+      socialPackage={listing.social_package ?? null}
+      returnedSocial={social === "1"}
     />
   );
 }

@@ -29,6 +29,8 @@ export type Listing = {
   promo_code?: string | null;
   is_comp?: boolean;
   admin_notes?: string | null;
+  // One-time social upsell claimed from the delivery paywall: 'starter' ($99) | 'reels' ($169).
+  social_package?: string | null;
   beds?: number | null;
   baths?: number | string | null;
   sqft?: number | null;

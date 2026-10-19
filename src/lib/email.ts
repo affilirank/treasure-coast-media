@@ -223,6 +223,48 @@ export async function sendTipNotificationEmail(input: { to: string[]; agentName:
   return { status: "sent" as const };
 }
 
+export async function sendSocialPackageConfirmationEmail(input: { to: string[]; agentName: string; propertyAddress: string; planLabel: string; deliveryUrl: string }) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const };
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">Your social package is booked 🎉</h2>
+    <p>Hi ${escapeHtml(input.agentName)},</p>
+    <p>Thanks for adding the <strong>${escapeHtml(input.planLabel)}</strong> to <strong>${escapeHtml(input.propertyAddress)}</strong>. Your receipt is on its way from Stripe.</p>
+    <p>We'll reach out within one business day to line up the posts and get your 30 days on Facebook and Instagram started.</p>
+    ${button(input.deliveryUrl, "View Your Delivery")}`);
+
+  const result = await new Resend(config.apiKey).emails.send({
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
+    to: input.to,
+    subject: `Social package booked — ${input.propertyAddress}`,
+    html,
+  });
+  if (result.error) throw new Error(result.error.message ?? "Failed to send social confirmation");
+  return { status: "sent" as const };
+}
+
+export async function sendSocialPackageNotificationEmail(input: { to: string[]; agentName: string; agentEmail: string; propertyAddress: string; planLabel: string; amount: string }) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const };
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">New social package sale 💸</h2>
+    <p>${escapeHtml(input.agentName)} (${escapeHtml(input.agentEmail)}) claimed the <strong>${escapeHtml(input.planLabel)}</strong> for <strong>${escapeHtml(input.propertyAddress)}</strong> — <strong>${escapeHtml(input.amount)}</strong>.</p>
+    <p style="color:#65726e;font-size:13px;">Deliver 30 days of Facebook &amp; Instagram posts${input.planLabel.includes("Reels") ? " plus 7 premium branded reels" : ""}. This is separate from the invoice and appears in your Stripe dashboard.</p>`);
+
+  const result = await new Resend(config.apiKey).emails.send({
+    from: withDisplayName(config.from),
+    replyTo: replyTo(),
+    to: input.to,
+    subject: `Social package ${input.amount} — ${input.propertyAddress}`,
+    html,
+  });
+  if (result.error) throw new Error(result.error.message ?? "Failed to send social notification");
+  return { status: "sent" as const };
+}
+
 export async function sendPromoEmail(input: { to: string[]; subject: string; heading: string; body: string; code?: string | null; offerUrl?: string | null }) {
   const config = emailConfig();
   if (!config) return { status: "preview" as const, sent: 0 };

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { deliveryLinks } from "@/lib/delivery";
-import { sendDeliveryReadyEmail, sendTipNotificationEmail } from "@/lib/email";
+import { sendDeliveryReadyEmail, sendSocialPackageConfirmationEmail, sendSocialPackageNotificationEmail, sendTipNotificationEmail } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -45,6 +45,53 @@ export async function POST(request: Request) {
       }
     }
     return Response.json({ received: true, tip: true });
+  }
+
+  // Social media packages are one-time upsells; they must never touch the invoice state.
+  if (session.metadata?.kind === "social") {
+    const socialListingId = session.metadata?.listing_id;
+    if (session.payment_status === "paid" && socialListingId) {
+      const plan = session.metadata?.package === "reels" ? "reels" : "starter";
+      const planLabel = plan === "reels" ? "30-Day Social Plan + 7 Premium Reels" : "30-Day Social Plan";
+      const amount = session.amount_total ? `$${(session.amount_total / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "";
+      // Gated on social_package IS NULL so Stripe retries never double-claim or double-email.
+      const { data: updated } = await supabaseAdmin()
+        .from("listings")
+        .update({ social_package: plan })
+        .eq("id", socialListingId)
+        .is("social_package", null)
+        .select("property_address, agent_name, agent_email, access_token");
+      const listing = updated?.[0];
+      if (listing) {
+        try {
+          await sendSocialPackageConfirmationEmail({
+            to: [listing.agent_email],
+            agentName: listing.agent_name,
+            propertyAddress: listing.property_address,
+            planLabel,
+            deliveryUrl: deliveryLinks(listing.access_token).delivery,
+          });
+        } catch (cause) {
+          console.error("Social confirmation email failed", cause);
+        }
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+        if (adminEmail) {
+          try {
+            await sendSocialPackageNotificationEmail({
+              to: [adminEmail],
+              agentName: listing.agent_name,
+              agentEmail: listing.agent_email,
+              propertyAddress: listing.property_address,
+              planLabel,
+              amount,
+            });
+          } catch (cause) {
+            console.error("Social notification email failed", cause);
+          }
+        }
+      }
+    }
+    return Response.json({ received: true, social: true });
   }
 
   const listingId = session.metadata?.listing_id;
