@@ -184,6 +184,25 @@ export async function sendDiscountEmail(input: {
   return { status: "sent" as const };
 }
 
+export async function sendTipNotificationEmail(input: { to: string[]; agentName: string; agentEmail: string; propertyAddress: string; amount: string }) {
+  const config = emailConfig();
+  if (!config) return { status: "preview" as const };
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 12px;">You received a thank-you 🎉</h2>
+    <p>${escapeHtml(input.agentName)} (${escapeHtml(input.agentEmail)}) sent an optional gratuity of <strong>${escapeHtml(input.amount)}</strong> for <strong>${escapeHtml(input.propertyAddress)}</strong>.</p>
+    <p style="color:#65726e;font-size:13px;">This is separate from the invoice and appears in your Stripe dashboard.</p>`);
+
+  const result = await new Resend(config.apiKey).emails.send({
+    from: config.from,
+    to: input.to,
+    subject: `Thank-you tip ${input.amount} — ${input.propertyAddress}`,
+    html,
+  });
+  if (result.error) throw new Error(result.error.message ?? "Failed to send tip notification");
+  return { status: "sent" as const };
+}
+
 export async function sendPromoEmail(input: { to: string[]; subject: string; heading: string; body: string; code?: string | null; offerUrl?: string | null }) {
   const config = emailConfig();
   if (!config) return { status: "preview" as const, sent: 0 };

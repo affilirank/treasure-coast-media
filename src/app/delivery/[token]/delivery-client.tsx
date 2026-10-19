@@ -14,6 +14,7 @@ type Props = {
   amount: number;
   isPaid: boolean;
   returnedFromCheckout: boolean;
+  returnedTip: boolean;
   images: GalleryImage[];
   hasFloorPlan: boolean;
   hasVideo: boolean;
@@ -30,13 +31,16 @@ async function fetchDownloads(token: string, kind: Kind | "video") {
   return result.files as { name: string; url: string }[];
 }
 
-export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink }: Props) {
+export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink }: Props) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [tipBusy, setTipBusy] = useState(false);
+  const [tipError, setTipError] = useState("");
+  const [tipCustom, setTipCustom] = useState("");
 
   // After Stripe redirects back, the webhook may take a few seconds to mark the listing paid.
   useEffect(() => {
@@ -113,6 +117,21 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
     setTimeout(() => setCopied(""), 1500);
   }
 
+  async function payTip(value: number) {
+    if (!Number.isFinite(value) || value < 1) return setTipError("Choose a thank-you of at least $1.");
+    setTipBusy(true);
+    setTipError("");
+    try {
+      const response = await fetch("/api/tip", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, amount: value }) });
+      const result = await response.json();
+      if (!response.ok || !result.url) throw new Error(result.error ?? "Unable to start the thank-you checkout.");
+      window.location.assign(result.url);
+    } catch (cause) {
+      setTipError(cause instanceof Error ? cause.message : "Unable to start the thank-you checkout.");
+      setTipBusy(false);
+    }
+  }
+
   const btn = "flex items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
@@ -173,6 +192,50 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
             ))
           )}
         </section>
+
+        {isPaid && (
+          <section className="mb-10 rounded-lg border border-[#c4a16a]/30 bg-[#c4a16a]/5 p-5">
+            {returnedTip && (
+              <p className="mb-3 rounded-md bg-emerald-900/40 p-3 text-sm text-emerald-200">
+                Thank you — your thank-you went through. It genuinely means a lot. 🙏
+              </p>
+            )}
+            <h2 className="text-lg font-semibold text-[#e1c697]">Loved the work?</h2>
+            <p className="mt-1 text-sm text-neutral-300">A thank-you is completely optional — your invoice is already settled, and there is never any obligation.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {[10, 25, 50].map((value) => (
+                <button
+                  key={value}
+                  disabled={tipBusy}
+                  onClick={() => payTip(value)}
+                  className={`${btn} border-[#c4a16a] text-[#e1c697] hover:bg-[#c4a16a]/15`}
+                >
+                  {tipBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} ${value}
+                </button>
+              ))}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-neutral-400">$</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  placeholder="Custom"
+                  value={tipCustom}
+                  onChange={(event) => setTipCustom(event.target.value)}
+                  className="w-24 rounded-md border border-neutral-600 bg-transparent px-3 py-3 text-sm text-neutral-100 placeholder:text-neutral-500"
+                />
+                <button
+                  disabled={tipBusy || tipCustom === ""}
+                  onClick={() => payTip(Number(tipCustom))}
+                  className={`${btn} border-[#c4a16a] bg-[#c4a16a] text-[#14201e]`}
+                >
+                  Send a thank-you
+                </button>
+              </div>
+            </div>
+            {tipError && <p role="alert" className="mt-3 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{tipError}</p>}
+          </section>
+        )}
 
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {images.map((image) => (

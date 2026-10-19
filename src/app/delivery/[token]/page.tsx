@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DeliveryPage({ params, searchParams }: PageProps<"/delivery/[token]">) {
   const { token } = await params;
-  const { paid } = await searchParams;
+  const { paid, tipped } = await searchParams;
   const found = await getListingByToken(token);
   if (!found) notFound();
   const { listing, assets } = found;
@@ -33,6 +33,7 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
       amount={Number(listing.invoice_amount)}
       isPaid={listing.is_paid}
       returnedFromCheckout={paid === "1"}
+      returnedTip={tipped === "1"}
       images={images}
       hasFloorPlan={assets.some((a) => a.asset_type === "floor_plan_pdf" || a.asset_type === "floor_plan_img")}
       hasVideo={assets.some((a) => a.asset_type === "walkthrough_video")}

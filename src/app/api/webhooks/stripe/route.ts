@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { deliveryLinks } from "@/lib/delivery";
-import { sendDeliveryReadyEmail } from "@/lib/email";
+import { sendDeliveryReadyEmail, sendTipNotificationEmail } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -24,6 +24,29 @@ export async function POST(request: Request) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
+
+  // Optional gratuities are recorded in Stripe only; they must never touch the invoice state.
+  if (session.metadata?.kind === "tip") {
+    if (session.payment_status === "paid") {
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      if (adminEmail) {
+        const amount = session.amount_total ? `$${(session.amount_total / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "a thank-you";
+        try {
+          await sendTipNotificationEmail({
+            to: [adminEmail],
+            agentName: session.metadata?.agent_name ?? session.customer_details?.name ?? "A client",
+            agentEmail: session.customer_details?.email ?? session.metadata?.agent_email ?? "",
+            propertyAddress: session.metadata?.property_address ?? "a delivery",
+            amount,
+          });
+        } catch (cause) {
+          console.error("Tip notification email failed", cause);
+        }
+      }
+    }
+    return Response.json({ received: true, tip: true });
+  }
+
   const listingId = session.metadata?.listing_id;
   // Sessions without a listing belong to other flows (e.g. booking deposits).
   if (!listingId) return Response.json({ received: true, ignored: true });
