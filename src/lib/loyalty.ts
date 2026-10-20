@@ -25,8 +25,8 @@ export type LoyaltyTier = {
 export const LOYALTY_TIERS: LoyaltyTier[] = [
   { id: "Silver", min: 1, max: 4, percentOff: 0, couponId: null, perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
   { id: "Gold", min: 5, max: 9, percentOff: 5, couponId: "LOYALTY5", perk: "5% off one-time shoots for the rest of the year + 1 free virtual twilight per 5 shoots." },
-  { id: "Platinum", min: 10, max: 19, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for the rest of the year + free 2D floor plans + 2 rush credits." },
-  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for the rest of the year + one annual agent branding/headshot session + first-priority scheduling." },
+  { id: "Platinum", min: 10, max: 19, percentOff: 7, couponId: "LOYALTY7", perk: "7% off one-time shoots for the rest of the year + free 2D floor plans." },
+  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for the rest of the year + 2 rush credits + one annual agent branding/headshot session + first-priority scheduling." },
 ];
 
 /** January 1 of the current year, used to scope the annual shoot count. */
@@ -41,4 +41,38 @@ export function tierForShootCount(shootCount: number): LoyaltyTier {
 
 export function loyaltyCouponForShootCount(shootCount: number): string | null {
   return tierForShootCount(shootCount).couponId;
+}
+
+/**
+ * Resolve a Stripe coupon id for a loyalty percentage, creating it if missing.
+ *
+ * The club coupons were originally created by hand in Stripe, so a new tier (7%)
+ * would silently fall back to full price. This provisions the coupon on demand so
+ * every tier is guaranteed to have a working discount.
+ */
+export async function resolveLoyaltyCouponId(couponId: string | null, percentOff: number): Promise<string | null> {
+  if (!couponId) return null;
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) return null;
+  try {
+    const Stripe = (await import("stripe")).default;
+    const client = new Stripe(secretKey);
+    try {
+      const existing = await client.coupons.retrieve(couponId);
+      if (existing && !existing.deleted) return existing.id;
+    } catch {
+      // Coupon is missing; fall through and create it.
+    }
+    if (percentOff <= 0) return null;
+    const created = await client.coupons.create({
+      id: couponId,
+      name: `Merit Club ${percentOff}%`,
+      percent_off: percentOff,
+      duration: "once",
+    });
+    return created.id;
+  } catch {
+    // Never block a customer: fall back to no discount.
+    return null;
+  }
 }

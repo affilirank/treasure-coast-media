@@ -771,18 +771,16 @@ function MeritClub() {
   const rewards = [
     { level: "Silver", count: "1–4 shoots / year", perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
     { level: "Gold", count: "5–9 shoots / year", perk: "5% off one-time shoots for the rest of the year + 1 free virtual twilight per 5 shoots." },
-    { level: "Platinum", count: "10–19 shoots / year", perk: "10% off one-time shoots for the rest of the year + free 2D floor plans + 2 rush credits." },
-    { level: "Black Label", count: "20+ shoots / year", perk: "10% off one-time shoots for the rest of the year + one annual agent branding/headshot session + first-priority scheduling." },
+    { level: "Platinum", count: "10–19 shoots / year", perk: "7% off one-time shoots for the rest of the year + free 2D floor plans." },
+    { level: "Black Label", count: "20+ shoots / year", perk: "10% off one-time shoots for the rest of the year + 2 rush credits + one annual agent branding/headshot session + first-priority scheduling." },
   ];
 
   return (
     <section className="merit-club" aria-labelledby="merit-club-title">
       <div className="merit-club-heading">
-        <div>
-          <span className="section-kicker">Built for repeat partners</span>
-          <h3 id="merit-club-title">The Merit Club <span>| Partner Volume Rewards</span></h3>
-        </div>
-        <p>Earn rewards on every listing. Tracked automatically by your agent email. <em>Rewards are earned on shoots completed each calendar year and reset every January 1, so they are re-earned annually. Club discounts apply to one-time shoot services — monthly growth retainers are excluded.</em></p>
+        <span className="section-kicker">Built for repeat partners</span>
+        <h3 id="merit-club-title">The Merit Club <span>| Partner Volume Rewards</span></h3>
+        <p>Earn rewards on every listing, tracked automatically by your agent email. <em>Rewards are earned on shoots completed each calendar year and reset every January 1, so they are re-earned annually. Club discounts apply to one-time shoot services — monthly growth retainers are excluded.</em></p>
       </div>
       <div className="merit-rewards-grid">
         {rewards.map((reward) => (

@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { getListingByToken, siteUrl } from "@/lib/delivery";
 import { currentYearShootCount } from "@/lib/customers";
-import { loyaltyCouponForShootCount } from "@/lib/loyalty";
+import { resolveLoyaltyCouponId, tierForShootCount } from "@/lib/loyalty";
 
 export const runtime = "nodejs";
 
@@ -39,7 +39,8 @@ export async function POST(request: Request) {
   if (discount === 0 && !isMonthlyInvoice) {
     try {
       const yearShoots = await currentYearShootCount(listing.agent_email);
-      loyaltyCoupon = loyaltyCouponForShootCount(yearShoots);
+      const tier = tierForShootCount(yearShoots);
+      loyaltyCoupon = await resolveLoyaltyCouponId(tier.couponId, tier.percentOff);
     } catch {
       // Customers table may not be provisioned yet; checkout still works without loyalty.
     }

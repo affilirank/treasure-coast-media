@@ -116,7 +116,7 @@ export default function CustomersAdmin() {
             </div>
           ))}
         </div>
-        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout on one-time shoots only: Gold 5%, Platinum 10%, Black Label 10% (10% max). Rewards are earned on shoots completed each calendar year and reset every January 1. Monthly retainers are excluded.</p>
+        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout on one-time shoots only: Gold 5%, Platinum 7%, Black Label 10% (10% max). Rewards are earned on shoots completed each calendar year and reset every January 1. Monthly retainers are excluded.</p>
       </section>
 
       <section className="mb-8 rounded-lg border border-neutral-200 bg-white p-5">
