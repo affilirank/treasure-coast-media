@@ -450,9 +450,9 @@ function AiPresenterSection({ track, onAddToQuote }: { track: Track; onAddToQuot
 
 function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
   const socialCards = [
-    { label: "Hook A · Problem / solution", line: "Need a contractor you can count on in Vero?", image: stockImages.commercialCraft, video: videoSources.contractorCrew },
-    { label: "Hook B · Behind the scenes", line: "A closer look at the care in every cut.", image: stockImages.commercialCraft, video: videoSources.craftProcess },
-    { label: "Hook C · Customer story", line: "See what a thoughtful visit feels like.", image: stockImages.commercialRestaurant, video: videoSources.clientExperience },
+    { label: "Hook A · Problem / solution", line: "Need a contractor you can count on in Vero?", image: "/videos/hook-a-suit-walk-poster.jpg", video: videoSources.contractorCrew },
+    { label: "Hook B · Customer story", line: "See what a thoughtful visit feels like.", image: "/videos/hook-b-car-dealership-poster.jpg", video: videoSources.craftProcess },
+    { label: "Hook C · Behind the scenes", line: "A closer look at the care in every cut.", image: "/videos/hook-c-office-poster.jpg", video: videoSources.clientExperience },
   ];
   const stills = [
     { title: "Office exterior, day", image: stockImages.commercialOfficeExterior },
@@ -476,7 +476,7 @@ function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
           <div className="commercial-showcase-grid">
             <div className="video-feature">
               <div className="video-feature-media">
-                <video autoPlay loop muted playsInline preload="metadata" poster={imageUrl(stockImages.commercialFounder, 1300)} aria-label="Looping cinematic commercial brand film">
+                <video autoPlay loop muted playsInline preload="metadata" poster="/videos/founder-story-poster.jpg" aria-label="Looping cinematic commercial brand film">
                   <source src={videoSources.founderStory} type="video/mp4" />
                 </video>
               </div>
@@ -1880,14 +1880,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         <div className="shell nav-shell">
           <Brand track={track} />
           <nav className="desktop-nav" aria-label="Main navigation">
-            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#retainers">Retainers</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
+            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#ai-presenter">AI presenter</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
           </nav>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
         <nav className={`mobile-nav${menuOpen ? " is-open" : ""}`} aria-label="Mobile navigation">
-          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#retainers" onClick={() => setMenuOpen(false)}>Retainers</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
+          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#ai-presenter" onClick={() => setMenuOpen(false)}>AI presenter</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
         </nav>
       </header>
 
@@ -2010,7 +2010,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
                   allowFullScreen
                 />
               ) : (
-                <video autoPlay controls playsInline poster={imageUrl(stockImages.commercialFounder, 1600)}><source src={videoSources.founderStory} type="video/mp4" /></video>
+                <video autoPlay controls playsInline poster="/videos/founder-story-poster.jpg"><source src={videoSources.founderStory} type="video/mp4" /></video>
               )}
               <div className="video-modal-title">{track === "real-estate" ? "Golden Hour Luxury Mansion Tour · Agent walkthrough" : "Founder story · 4K brand film"}</div>
             </motion.section>

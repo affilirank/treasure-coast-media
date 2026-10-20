@@ -40,6 +40,8 @@ export type RealEstatePackage = {
   turnkey?: boolean;
   includedVideoId?: string;
   includedAddOns?: Readonly<Record<string, number>>;
+  /** Optional override for the à-la-carte base suite value (e.g. a luxury photo suite). */
+  baseValue?: readonly number[];
 };
 
 export const realEstatePackages = [
@@ -75,7 +77,7 @@ export const realEstatePackages = [
       "Drone Property Boundary Line Graphic",
       "30-Day Automated Social Post Pack (Pre-scheduled via GoHighLevel CSV)",
     ],
-    prices: [795, 795, 895, 995],
+    prices: [895, 895, 995, 1095],
   },
   {
     id: "waterfront-estate-luxury-suite",
@@ -84,19 +86,18 @@ export const realEstatePackages = [
     badge: "SIGNATURE LUXURY · WATERFRONT & ACREAGE",
     turnkey: true,
     includedVideoId: "cinematic-showcase-film",
-    includedAddOns: { "amenities-suite": 1, "boundary-outline": 1, "zillow-tour": 1, "virtual-twilight": 1, "social-syndication-engine": 1 },
+    includedAddOns: { "amenities-suite": 1, "virtual-twilight": 1, "social-syndication-engine": 1 },
+    baseValue: [795, 895, 995, 1095],
     features: [
       "Comprehensive Luxury Photo Suite: 50–60+ hand-blended master HDR stills (interiors, architectural details, exterior vignettes)",
       "Expanded 4K Drone Suite: 12–15+ aerials highlighting waterfront access, dock, canals, lot scale, and coastal geography",
-      "Included Drone Boundary Graphic with lot line overlay",
-      "Included Neighborhood, Waterfront & HOA Amenity Suite (marina, clubhouse, beach access, golf)",
       "Up to 2-Minute Cinematic Showcase Film (16:9 4K Master + Unbranded MLS Cut)",
-      "Zillow 3D Home Tour + 2D Floor Plan",
+      "Included Neighborhood, Waterfront & HOA Amenity Suite (marina, clubhouse, beach access, golf)",
       "1 Hand-Crafted Virtual Twilight Hero Still",
       "30-Day Premium Social Syndication Engine (automated via GHL): 4 vertical reels, one per week (Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) and 8 branded feed/carousel posts with localized copy and hashtags",
-      "Priority 9:00 AM Next-Day Delivery Guarantee",
+      "Priority 9:00 AM Next-Day Delivery Promise",
     ],
-    prices: [1195, 1195, 1295, 1395],
+    prices: [1575, 1575, 1675, 1775],
   },
 ] as const;
 
@@ -179,8 +180,9 @@ export function realEstatePackageValue(packageId: string, tierId: string) {
   if (!pkg?.turnkey || tierIndex < 0) return null;
   const baseSuite = realEstatePackageList.find((item) => item.id === "standard-mls-suite")!;
   const video = realEstateVideoOptions.find((item) => item.id === pkg.includedVideoId);
+  const baseAmount = pkg.baseValue?.[tierIndex] ?? baseSuite.prices[tierIndex];
   const lines = [
-    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex] },
+    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseAmount },
     ...(video ? [{ label: video.name, amount: video.price }] : []),
     ...Object.entries(pkg.includedAddOns ?? {}).map(([id, qty]) => {
       const addOn = realEstateAddOns.find((item) => item.id === id)!;
@@ -368,15 +370,16 @@ export const videoSources = {
   commercialVslEmbed: "https://app.heygen.com/embeds/39f1ebb7c97945b2925c602a8ac6cef7",
   commercialPainPointEmbed: "https://app.heygen.com/embeds/a084195a226641109e17fcb5136f1177",
   founderStory: "/videos/founder-story.mp4",
-  contractorCrew: "/videos/walkthrough-1.mp4",
-  craftProcess: "/videos/walkthrough-2.mp4",
-  clientExperience: "/videos/walkthrough-1.mp4",
+  // Commercial social hooks — free-license Pixabay clips, self-hosted.
+  contractorCrew: "/videos/hook-a-suit-walk.mp4",
+  craftProcess: "/videos/hook-b-car-dealership.mp4",
+  clientExperience: "/videos/hook-c-office.mp4",
 } as const;
 
 export function imageUrl(id: string, width = 1200) {
-  // Absolute URLs (e.g. Pexels/Unsplash picks) pass straight through; Unsplash photo
-  // IDs still build a resized source.
-  if (/^https?:\/\//.test(id)) return id;
+  // Absolute URLs (Pexels/Unsplash picks) and root-relative assets (self-hosted posters)
+  // pass straight through; Unsplash photo IDs still build a resized source.
+  if (/^https?:\/\//.test(id) || id.startsWith("/")) return id;
   return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
 }
 

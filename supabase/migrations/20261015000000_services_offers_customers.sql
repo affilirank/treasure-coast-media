@@ -23,8 +23,8 @@ insert into public.services (source_id, sort_order, category, name, description,
   -- Real estate base media
   ('re-pkg:essentials', 10, 'real-estate', 'Photo-Only Essentials', 'Next-day HDR interior and exterior stills for a polished listing.', 195, 'starting', 'once'),
   ('re-pkg:standard-mls-suite', 20, 'real-estate', 'Full Media Suite (Photos + Drone + 2D Floor Plan)', 'A complete listing-ready media foundation.', 275, 'starting', 'once'),
-  ('re-pkg:complete-showcase-suite', 30, 'real-estate', 'The Complete Showcase Suite', 'A complete listing launch in one package.', 795, 'starting', 'once'),
-  ('re-pkg:waterfront-estate-luxury-suite', 40, 'real-estate', 'The Waterfront & Estate Luxury Suite', 'Waterfront estates, acreage, and signature luxury listings.', 1195, 'starting', 'once'),
+  ('re-pkg:complete-showcase-suite', 30, 'real-estate', 'The Complete Showcase Suite', 'A complete listing launch in one package.', 895, 'starting', 'once'),
+  ('re-pkg:waterfront-estate-luxury-suite', 40, 'real-estate', 'The Waterfront & Estate Luxury Suite', 'Waterfront estates, acreage, and signature luxury listings.', 1575, 'starting', 'once'),
   -- Real estate video
   ('re-video:cinematic-b-roll-reel', 50, 'real-estate', '60-Sec Cinematic B-Roll Reel (9:16)', 'Fast-paced vertical property walkthrough with aerial cuts.', 275, 'per property', 'once'),
   ('re-video:realtor-hosted-branding-reel', 60, 'real-estate', '60-Sec Realtor-Hosted Branding Reel (9:16)', 'Agent on-camera hook and outro with an unbranded MLS cut.', 395, 'per property', 'once'),
