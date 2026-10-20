@@ -182,6 +182,9 @@ export async function memberRewardWindow(
  * The customer-facing Merit Club line shown on the pages a member opens via
  * their emailed link (delivery + tour). Returns null for non-members (no shoots
  * yet) so the UI can simply hide the block.
+ *
+ * This is why there is no customer login: members see their standing on the
+ * links they already receive. See the note in src/lib/portal-auth.ts.
  */
 export async function memberBadge(email: string | null | undefined): Promise<{
   tier: LoyaltyTierId;

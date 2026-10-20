@@ -1,8 +1,34 @@
+/**
+ * Session helpers for the shared-password admin area.
+ *
+ * ── On customer access ──────────────────────────────────────────────────────
+ * There is deliberately **no customer login**. Customers reach everything
+ * through secret links emailed to them:
+ *   /showcase/[token]  branded listing tour (includes their Merit Club strip)
+ *   /mls/[token]       unbranded tour for MLS
+ *   /delivery/[token]  paywall: pay, then upload headline/description/headshot
+ *   /offer/[token]     a shared promo offer
+ *
+ * They see their Merit Club tier, progress and renewal date on those pages via
+ * memberBadge() (src/lib/customers.ts) — no account required. That is the right
+ * trade for a small book of business: nothing to remember, no password resets,
+ * no support load.
+ *
+ * The `PROJECT_*` helpers below are a DORMANT scaffold for a future customer
+ * portal (a 30-day, per-customer session rather than a shared password). They
+ * are defined but nothing creates or checks them yet. Reach for them when a
+ * customer has enough repeat listings that a single dashboard of *all* their
+ * work is worth building — at roughly 20+ repeat clients. Until then, prefer
+ * extending the link-based pages.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const ADMIN_SESSION_COOKIE = "merit_admin_session";
+/** Dormant: reserved for a future per-customer portal session. See note above. */
 export const PROJECT_SESSION_COOKIE = "merit_project_session";
 export const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 8;
+/** Dormant: reserved for a future per-customer portal session. See note above. */
 export const PROJECT_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function sessionSecret() {
@@ -68,11 +94,19 @@ export function isAdminSessionToken(token: string | undefined) {
   return readSessionToken(token)?.role === "admin";
 }
 
+/**
+ * Dormant scaffold for a future customer portal — see the file header note.
+ * Nothing calls this yet; the site has no customer login by design.
+ */
 export function createProjectSession(projectId: string) {
   const expiresAt = Math.floor(Date.now() / 1000) + PROJECT_SESSION_TTL_SECONDS;
   return createSession("project", expiresAt, projectId);
 }
 
+/**
+ * Checks — but nothing calls this today; see the file header note on why the
+ * site intentionally has no customer login yet.
+ */
 export function hasProjectSession(request: Request, projectId: string) {
   const session = readSession(request, PROJECT_SESSION_COOKIE);
   return session?.role === "project" && session.projectId === projectId;
