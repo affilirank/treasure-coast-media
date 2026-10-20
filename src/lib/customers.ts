@@ -2,7 +2,7 @@ import "server-only";
 import { getPrivateJson, listPrivateBlobs } from "@/lib/private-blob";
 import type { StoredBooking } from "@/lib/booking-store";
 import { supabaseAdmin } from "@/lib/supabase";
-import { loyaltyWindow, tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
+import { loyaltyProgress, loyaltyWindow, tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
 
 export type Customer = {
   id: string;
@@ -176,6 +176,40 @@ export async function memberRewardWindow(
   const renewsISO = window.renews.toISOString();
   const shootCount = stamps.filter((value) => value >= startISO && value < renewsISO).length;
   return { shootCount, window };
+}
+
+/**
+ * The customer-facing Merit Club line shown on the pages a member opens via
+ * their emailed link (delivery + tour). Returns null for non-members (no shoots
+ * yet) so the UI can simply hide the block.
+ */
+export async function memberBadge(email: string | null | undefined): Promise<{
+  tier: LoyaltyTierId;
+  percentOff: number;
+  perk: string;
+  shootCount: number;
+  toNext: number;
+  nextTier: LoyaltyTierId | null;
+  renewsAt: string;
+} | null> {
+  if (!email) return null;
+  const normalized = email.trim().toLowerCase();
+  if (!isEmail(normalized)) return null;
+
+  const { shootCount, window } = await memberRewardWindow(normalized);
+  if (shootCount <= 0 || !window) return null;
+
+  const { tier, next, toNext } = loyaltyProgress(shootCount);
+
+  return {
+    tier: tier.id,
+    percentOff: tier.percentOff,
+    perk: tier.perk,
+    shootCount,
+    toNext,
+    nextTier: next?.id ?? null,
+    renewsAt: window.renews.toISOString(),
+  };
 }
 
 export async function syncCustomers() {

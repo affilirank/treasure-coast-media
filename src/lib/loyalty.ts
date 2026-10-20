@@ -25,9 +25,9 @@ export type LoyaltyTier = {
  */
 export const LOYALTY_TIERS: LoyaltyTier[] = [
   { id: "Silver", min: 1, max: 4, percentOff: 0, couponId: null, perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
-  { id: "Gold", min: 5, max: 9, percentOff: 5, couponId: "LOYALTY5", perk: "5% off one-time shoots for the rest of the year + 1 free virtual twilight per 5 shoots." },
-  { id: "Platinum", min: 10, max: 19, percentOff: 7, couponId: "LOYALTY7", perk: "7% off one-time shoots for the rest of the year + free 2D floor plans." },
-  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for the rest of the year + 2 rush credits + one annual agent branding/headshot session + first-priority scheduling." },
+  { id: "Gold", min: 5, max: 9, percentOff: 5, couponId: "LOYALTY5", perk: "5% off one-time shoots through your reward year + 1 free virtual twilight per 5 shoots." },
+  { id: "Platinum", min: 10, max: 19, percentOff: 7, couponId: "LOYALTY7", perk: "7% off one-time shoots through your reward year + free 2D floor plans." },
+  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots through your reward year + 2 rush credits + one annual agent branding/headshot session + first-priority scheduling." },
 ];
 
 const YEAR_MS = 365.25 * 24 * 60 * 60 * 1000;

@@ -37,6 +37,7 @@ type Props = {
   floorPlanUrl: string | null;
   floorPlanPdfUrl: string | null;
   agent: { name: string; email: string; phone: string | null; brokerage: string | null; headshot: string | null };
+  memberBadgeSlot?: React.ReactNode;
 };
 
 const SLIDE_MS = 5500;
@@ -45,7 +46,7 @@ function money(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-export default function ListingLanding({ branded, address, city, state, zip, price, facts, images, videoUrl, floorPlanUrl, floorPlanPdfUrl, agent }: Props) {
+export default function ListingLanding({ branded, address, city, state, zip, price, facts, images, videoUrl, floorPlanUrl, floorPlanPdfUrl, agent, memberBadgeSlot }: Props) {
   const [active, setActive] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -321,6 +322,7 @@ export default function ListingLanding({ branded, address, city, state, zip, pri
               </a>
             )}
           </div>
+          {memberBadgeSlot && <div className="mx-auto max-w-4xl px-5 pb-12">{memberBadgeSlot}</div>}
         </section>
       )}
 

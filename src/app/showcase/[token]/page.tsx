@@ -4,6 +4,8 @@ import ListingLanding from "@/components/listing/listing-landing";
 import { loadTour } from "@/lib/tour";
 import { resolveHeadshotUrl } from "@/lib/delivery";
 import { factsFromListing, type ListingRow } from "@/lib/listing-details";
+import MemberBadge from "@/components/member-badge";
+import { memberBadge } from "@/lib/customers";
 
 export const metadata: Metadata = { title: "Property Showcase", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -14,6 +16,7 @@ export default async function ShowcasePage({ params }: PageProps<"/showcase/[tok
   if (!tour) notFound();
   const { listing } = tour;
   const facts = factsFromListing(listing as unknown as ListingRow);
+  const member = await memberBadge(listing.agent_email).catch(() => null);
 
   return (
     <main className="min-h-screen bg-[#0b0d0e]">
@@ -35,6 +38,7 @@ export default async function ShowcasePage({ params }: PageProps<"/showcase/[tok
         floorPlanUrl={tour.floorPlanUrl}
         floorPlanPdfUrl={tour.floorPlanPdfUrl}
         agent={{ name: listing.agent_name, email: listing.agent_email, phone: listing.agent_phone, brokerage: listing.brokerage_name, headshot: await resolveHeadshotUrl(listing.agent_headshot_url) }}
+        memberBadgeSlot={member ? <MemberBadge badge={member} tone="dark" /> : null}
       />
     </main>
   );

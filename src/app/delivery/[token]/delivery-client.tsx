@@ -26,6 +26,7 @@ type Props = {
   headshotUrl: string | null;
   socialPackage: string | null;
   returnedSocial: boolean;
+  memberBadgeSlot?: React.ReactNode;
 };
 
 const ZIP_NAMES: Record<Kind, string> = { mls: "MLS-Ready", print: "Full-Res-Print", floorplan: "Floor-Plan" };
@@ -51,7 +52,7 @@ async function fetchDownloads(token: string, kind: Kind | "video") {
   return result.files as { name: string; url: string }[];
 }
 
-export default function DeliveryClient({ token, address, amount, isPaid, hasCardOnFile, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot, socialPackage, returnedSocial }: Props) {
+export default function DeliveryClient({ token, address, amount, isPaid, hasCardOnFile, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot, socialPackage, returnedSocial, memberBadgeSlot }: Props) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -263,6 +264,7 @@ export default function DeliveryClient({ token, address, amount, isPaid, hasCard
         <img src="/_next/image?url=%2Fimages%2Fmerit-logo.png&w=128&q=75" alt="Merit Media & Marketing" width={64} height={64} className="mb-3 h-16 w-16 rounded-lg" />
         <p className="text-xs uppercase tracking-[0.2em] text-[#c4a16a]">Merit Media Delivery</p>
         <h1 className="mb-6 mt-1 text-3xl font-semibold">{address}</h1>
+        {memberBadgeSlot}
         {!isPaid && returnedFromCheckout && <p className="mb-4 rounded-md bg-[#c4a16a]/15 p-3 text-sm text-[#e1c697]">Confirming your payment… this page updates automatically.</p>}
         {error && <p role="alert" className="mb-4 rounded-md bg-red-900/40 p-3 text-sm text-red-200">{error}</p>}
 

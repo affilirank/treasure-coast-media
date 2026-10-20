@@ -4,6 +4,8 @@ import { deliveryLinks, getListingByToken, resolveHeadshotUrl } from "@/lib/deli
 import { loadBooking } from "@/lib/booking-store";
 import { getDownloadPresignedUrl, getPreviewPresignedUrl } from "@/lib/storage";
 import DeliveryClient, { type GalleryImage } from "./delivery-client";
+import MemberBadge from "@/components/member-badge";
+import { memberBadge } from "@/lib/customers";
 
 export const metadata: Metadata = { title: "Your Media Delivery | Merit Media", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -36,6 +38,9 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
     hasCardOnFile = Boolean(booking?.stripeSetupIntentId);
   }
 
+  // Merit Club: show the member their tier and progress toward the next one.
+  const member = await memberBadge(listing.agent_email).catch(() => null);
+
   return (
     <DeliveryClient
       token={listing.access_token}
@@ -55,6 +60,13 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
       headshotUrl={await resolveHeadshotUrl(listing.agent_headshot_url)}
       socialPackage={listing.social_package ?? null}
       returnedSocial={social === "1"}
+      memberBadgeSlot={
+        member ? (
+          <div className="mb-8">
+            <MemberBadge badge={member} tone="dark" />
+          </div>
+        ) : null
+      }
     />
   );
 }
