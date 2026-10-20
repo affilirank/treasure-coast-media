@@ -44,7 +44,6 @@ import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-
 import { emptyPropertyDetails, type BookingPropertyDetails } from "@/lib/booking-property";
 import {
   commercialGallery,
-  commercialGrowthServices,
   commercialPackages,
   commercialRetainers,
   imageUrl,
@@ -358,7 +357,7 @@ function ComparisonSection() {
           <span className="comparison-label before">{isInterior ? "Original exposure" : "Daylight"}</span>
           <span className="comparison-label after">{isInterior ? "HDR + window pull" : "Virtual twilight"}</span>
           <span className="comparison-divider" style={{ left: `${position}%` }} />
-          <label className="sr-only" htmlFor="comparison-slider">Compare {isInterior ? "the original kitchen exposure with the bright HDR edit" : "the daylight exterior with the sunset virtual twilight edit"}</label>
+          <label className="sr-only" htmlFor="comparison-slider">Compare{" "}{isInterior ? "the original kitchen exposure with the bright HDR edit" : "the daylight exterior with the sunset virtual twilight edit"}</label>
           <input
             id="comparison-slider"
             className="comparison-range"
@@ -369,7 +368,7 @@ function ComparisonSection() {
             onChange={(event) => setPosition(Number(event.target.value))}
             aria-valuetext={`${position}% edited ${isInterior ? "HDR kitchen" : "virtual twilight"} image shown`}
           />
-          <span className="comparison-caption">Drag the divider to reveal the {isInterior ? "brighter HDR finish" : "warm sunset conversion"}.</span>
+          <span className="comparison-caption">Drag the divider to reveal the{" "}{isInterior ? "brighter HDR finish" : "warm sunset conversion"}.</span>
           </div>
         </div>
         <div className="proof-copy">
@@ -1080,52 +1079,6 @@ function CommercialCalculator({
   );
 }
 
-function RetainersSection({
-  track,
-  onDiscuss,
-}: {
-  track: Track;
-  onDiscuss: (service: string) => void;
-}) {
-  const items = track === "real-estate" ? realEstateRetainers : commercialGrowthServices;
-  const [expandedItem, setExpandedItem] = useState<string | null>(items[0]?.name ?? null);
-  return (
-    <section className="section section-white retainer-section" id="retainers">
-      <div className="shell">
-        <SectionHeading
-          kicker="Keep the momentum"
-          title={<>A stronger presence, <em>month after month.</em></>}
-          intro={track === "real-estate" ? "Repeatable campaigns and client touchpoints for agents who want their marketing to keep pace." : "Production is the start. Stay visible, follow up sooner and turn more local intent into booked work."}
-        />
-        <div className="retainer-grid">
-          {items.map((item, index) => (
-            <article className={`retainer-item${expandedItem === item.name ? " is-expanded" : ""}${item.featured ? " is-featured" : ""}`} key={item.name}>
-              <button
-                className="retainer-toggle"
-                type="button"
-                aria-expanded={expandedItem === item.name}
-                aria-controls={`retainer-detail-${index}`}
-                onClick={() => setExpandedItem(expandedItem === item.name ? null : item.name)}
-              >
-                <span className="retainer-number">{String(index + 1).padStart(2, "0")}</span>
-                <span className="retainer-title">{item.name}{item.featured && <small className="retainer-feature-tag">{item.tag}</small>}</span>
-                <span className="retainer-price">{money(item.price)}{item.billing === "monthly" ? " / mo" : " / property"}</span>
-                <ChevronDown className="retainer-chevron" size={18} />
-              </button>
-              <div className="retainer-detail" id={`retainer-detail-${index}`} hidden={expandedItem !== item.name}>
-                <p>{item.detail}</p>
-                {item.included && <ul>{item.included.map((feature) => <li key={feature}>{feature}</li>)}</ul>}
-                <button className="retainer-discuss" type="button" onClick={() => onDiscuss(item.name)}>
-                  Discuss this offer <ArrowUpRight size={15} />
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function ProductionWorkflow({ track }: { track: Track }) {
   const steps = track === "real-estate"
@@ -1144,7 +1097,7 @@ function ProductionWorkflow({ track }: { track: Track }) {
     <section className="section section-dark">
       <div className="shell">
         <SectionHeading
-          kicker={track === "real-estate" ? "Merit Media & Marketing 24-Hour Guarantee" : "The Merit Precision Workflow"}
+          kicker={track === "real-estate" ? "Merit Media & Marketing 24-Hour Delivery Promise" : "The Merit Precision Workflow"}
           title={<>A clear process. <em>Room to do great work.</em></>}
           intro="Every step is designed around your business, your people and a delivery you can put to work."
         />
@@ -1186,7 +1139,7 @@ function SlotPicker({ date, time, onPick, refreshKey }: { date: string; time: st
     return () => { cancelled = true; };
   }, [refreshKey]);
 
-  if (failed) return <p className="form-error" role="alert">The booking calendar could not be loaded. Please refresh or email hello@meritmediafl.com.</p>;
+  if (failed) return <p className="form-error" role="alert">The booking calendar could not be loaded. Please refresh or email meritmediamarketingfl@gmail.com.</p>;
   if (!days) return <p className="slot-picker-note">Loading live availability…</p>;
 
   const months = [...new Set(days.map((day) => day.date.slice(0, 7)))];
@@ -1322,7 +1275,7 @@ function BookingSection({
           <h2 className="text-display">Let’s make <em>the next one count.</em></h2>
           <p>Share the essentials. We’ll send your itemized scope to our booking workflow and follow up to confirm access and timing.</p>
           <div className="booking-contact-line"><MapPin size={15} />Treasure Coast & Palm Beaches</div>
-          <div className="booking-contact-line"><Mail size={15} /><a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a></div>
+          <div className="booking-contact-line"><Mail size={15} /><a href="mailto:meritmediamarketingfl@gmail.com">meritmediamarketingfl@gmail.com</a></div>
         </div>
         <form className="booking-form" onSubmit={onSubmit}>
           <div className="form-field is-wide">
@@ -1506,9 +1459,13 @@ function SiteFooter({ track }: { track: Track }) {
         </div>
         <div className="footer-column">
           <h3>Start a conversation</h3>
-          <a href="mailto:hello@meritmediafl.com">hello@meritmediafl.com</a>
+          <a href="mailto:meritmediamarketingfl@gmail.com">meritmediamarketingfl@gmail.com</a>
+          <a href="tel:+17722901756">Call 772-290-1756</a>
           <a href="#booking">Request a production date</a>
           <p>{track === "real-estate" ? "Property media · Listings · Agent growth" : "Brand films · Commercial media · Growth"}</p>
+          <div className="footer-social">
+            <a href="https://instagram.com/merit.media.marketing" target="_blank" rel="noopener noreferrer">Instagram</a>
+          </div>
         </div>
       </div>
       <div className="shell footer-tax">
@@ -1609,19 +1566,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     };
   }, [selectedGallery, videoOpen, receipt, gatewayOpen, track, filter]);
 
-  useEffect(() => {
-    if (track !== "real-estate" || sessionStorage.getItem("pricing-gateway-seen")) return;
-    const target = document.getElementById("pricing");
-    if (!target) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      sessionStorage.setItem("pricing-gateway-seen", "1");
-      setGatewayOpen(true);
-      observer.disconnect();
-    }, { threshold: 0.15 });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [track]);
+  // The "Two ways to book" gateway opens only when the visitor clicks the
+  // "Watch the 30-second guide" button — it no longer auto-opens over pricing.
 
   function changeTrack(next: Track) {
     setFilter("All");
@@ -1798,7 +1744,13 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   }
 
   function scrollToBooking() {
-    document.getElementById("booking")?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth" });
+    const section = document.getElementById("booking");
+    if (!section) return;
+    section.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth" });
+    // Move keyboard focus to the form so the visitor lands ready to type.
+    window.setTimeout(() => {
+      section.querySelector<HTMLInputElement>("input, select, textarea")?.focus({ preventScroll: true });
+    }, reduceMotion ? 0 : 420);
   }
   function scrollToPricing() {
     document.getElementById("pricing")?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth" });
@@ -1927,14 +1879,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         <div className="shell nav-shell">
           <Brand track={track} />
           <nav className="desktop-nav" aria-label="Main navigation">
-            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#retainers">Retainers</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
+            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#retainers">Retainers</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
           </nav>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
         <nav className={`mobile-nav${menuOpen ? " is-open" : ""}`} aria-label="Mobile navigation">
-          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#retainers" onClick={() => setMenuOpen(false)}>Retainers</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
+          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#retainers" onClick={() => setMenuOpen(false)}>Retainers</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
         </nav>
       </header>
 
@@ -1966,7 +1918,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
 
       <section className="trust-strip shell" aria-label="Service commitments">
         <div className="trust-item"><Plane size={19} />FAA Part 107 commercial remote pilot certified</div>
-        <div className="trust-item"><Clock3 size={19} />Guaranteed 24-hour digital delivery</div>
+        <div className="trust-item"><Clock3 size={19} />Next-morning digital delivery by 9:00 AM</div>
         <div className="trust-item"><FileCheck2 size={19} />Florida sales-tax exempt digital delivery</div>
         <div className="trust-item"><ShieldCheck size={19} />100% unrestricted commercial usage rights</div>
       </section>
@@ -1996,7 +1948,6 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           <ServicesSection track={track} onDiscuss={discussService} />
           {track === "commercial" && pricingSection}
 
-          <RetainersSection track={track} onDiscuss={discussService} />
           {track === "commercial" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ProductionWorkflow track={track} />
           <BookingSection

@@ -65,6 +65,7 @@ img, video { display: block; max-width: 100%; }
 .desktop-nav a, .mobile-nav a, .mobile-menu-toggle { position: relative; z-index: 2; pointer-events: auto; }
 .desktop-nav a { padding-block: 10px; transition: color 180ms ease; }
 .desktop-nav a:hover { color: var(--gold-light); }
+.nav-phone { display: inline-flex; align-items: center; gap: 6px; color: var(--gold-light); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .nav-book, .button-primary, .button-dark, .button-outline, .button-light {
 	display: inline-flex; min-height: 45px; align-items: center; justify-content: center; gap: 10px;
 	border: 1px solid transparent; padding: 0 18px; font-size: 11px; font-weight: 700;
@@ -524,6 +525,8 @@ img, video { display: block; max-width: 100%; }
 .footer-column h3 { margin: 0 0 16px; color: var(--gold-light); font-size: 8px; font-weight: 750; letter-spacing: .15em; text-transform: uppercase; }
 .footer-column p, .footer-column a { display: block; margin: 0 0 9px; color: rgb(255 255 255 / 70%); font-size: 9px; line-height: 1.65; }
 .footer-column a:hover { color: var(--gold-light); }
+.footer-social { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
+.footer-social a { color: rgb(255 255 255 / 78%); text-decoration: underline; text-underline-offset: 3px; }
 .footer-tax { border-top: 1px solid rgb(255 255 255 / 14%); padding-block: 19px; color: rgb(255 255 255 / 55%); font-size: 8px; line-height: 1.75; }
 .footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 15px; border-top: 1px solid rgb(255 255 255 / 14%); padding-block: 15px; color: rgb(255 255 255 / 47%); font-size: 8px; }
 
