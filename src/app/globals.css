@@ -386,6 +386,7 @@ img, video { display: block; max-width: 100%; }
 .calculator-retainers .addon-row.is-featured { border: 1px solid #c5aa7c; background: #fbf8f0; padding: 12px; }
 .retainer-feature-tag { display: block; margin-top: 5px; color: #806a43 !important; font-size: 8px !important; font-weight: 750 !important; letter-spacing: .1em; }
 .calculator-includes { display: grid; gap: 6px; margin: 13px 0 0; padding-left: 27px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.calculator-value-note { margin: 10px 0 0 27px; color: #83d5a7; font-size: 10px; font-weight: 600; line-height: 1.5; }
 .retainer-item.is-featured { border-top: 2px solid #b18c54; background: #fbf8f0; }
 .retainer-detail ul { display: grid; gap: 8px; margin: 0 0 17px; padding-left: 17px; color: var(--ink-soft); font-size: 10px; line-height: 1.55; }
 .addon-row:nth-last-child(-n + 2) { border-bottom: 0; }

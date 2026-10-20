@@ -248,6 +248,8 @@ export type MarketingRetainer = {
   featured?: boolean;
   tag?: string;
   included?: string[];
+  /** À-la-carte value of the included services, for a "value" savings line. */
+  valueTotal?: number;
 };
 
 export const commercialRetainers: MarketingRetainer[] = [
@@ -297,17 +299,18 @@ export const realEstateRetainers: MarketingRetainer[] = [
     id: "complete-realtor-growth-partner",
     name: "The Complete Realtor Growth Partner",
     detail: "A connected monthly marketing system for consistent visibility and listing lead generation.",
-    price: 995,
+    price: 1295,
     billing: "monthly",
     featured: true,
     tag: "MOST POPULAR · BEST VALUE",
     included: [
-      "40 custom posts monthly across Instagram, Facebook, and LinkedIn",
-      "One dedicated Next.js lead-generation page with lead capture, instant SMS alerts, and KVCore, Follow Up Boss, or Lofty CRM sync",
-      "Monthly listing and buyer campaign execution; ad spend paid directly to Meta",
-      "Two branded local newsletters each month for your sphere",
-      "One free base listing shoot each month up to 1,800 SQFT: photos, drone, and floor plan, or a $225 shoot credit",
+      "40 custom posts monthly across Instagram, Facebook, and LinkedIn ($595 value)",
+      "One dedicated Next.js lead-generation page with lead capture, instant SMS alerts, and KVCore, Follow Up Boss, or Lofty CRM sync ($450 value)",
+      "Monthly listing and buyer campaign execution; ad spend paid directly to Meta ($650 value)",
+      "Two branded local newsletters each month for your sphere ($245 value)",
+      "One free base listing shoot each month up to 1,800 SQFT: photos, drone, and floor plan, or a $225 shoot credit ($225 value)",
     ],
+    valueTotal: 2165,
   },
 ] as const;
 export type RealEstateRetainerId = (typeof realEstateRetainers)[number]["id"];

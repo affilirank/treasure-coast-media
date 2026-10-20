@@ -14,3 +14,10 @@ where source_id = 're-addon:rush-delivery' and price = 75.00;
 update public.services
 set price = 195.00
 where source_id = 're-addon:social-post-pack' and price = 125.00;
+
+--  7. The Complete Realtor Growth Partner: $995 -> $1,295/mo. Its included services
+--     total ~$2,165 à la carte ($595 posts + $450 lead page/CRM + $650 campaign
+--     management + $245 newsletters + $225 shoot/credit), so the bundle moves to $1,295.
+update public.services
+set price = 1295.00
+where source_id = 're-ret:complete-realtor-growth-partner' and price = 995.00;

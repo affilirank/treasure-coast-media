@@ -68,7 +68,7 @@ insert into public.services (source_id, sort_order, category, name, description,
   ('re-ret:agent-email-campaign-launch', 560, 'real-estate-marketing', 'Listing & Open House Email Campaigns', 'Branded email campaign for a listing or open house.', 195, null, 'once'),
   ('re-ret:agent-paid-search', 570, 'real-estate-marketing', 'Google Buyer & Seller Lead Campaigns', 'Local Google Search campaigns for buyers and sellers.', 450, null, 'monthly'),
   ('re-ret:agent-crm-automation', 580, 'real-estate-marketing', 'AI Lead Follow-Up & CRM Automation', 'Fast SMS and email responses connected to your CRM.', 350, null, 'monthly'),
-  ('re-ret:complete-realtor-growth-partner', 590, 'real-estate-marketing', 'The Complete Realtor Growth Partner', 'Connected monthly marketing system for listing leads.', 995, null, 'monthly'),
+  ('re-ret:complete-realtor-growth-partner', 590, 'real-estate-marketing', 'The Complete Realtor Growth Partner', 'Connected monthly marketing system for listing leads.', 1295, null, 'monthly'),
   -- Blank custom blocks to create new services
   ('custom:blank-1', 900, 'custom', 'Custom Service Block', 'Rename and price this as a brand-new service to combine into offers.', 0, null, 'once'),
   ('custom:blank-2', 910, 'custom', 'Custom Service Block', 'Rename and price this as a brand-new service to combine into offers.', 0, null, 'once'),

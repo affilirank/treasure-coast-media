@@ -995,9 +995,20 @@ function RealEstateCalculator({
           ))}
         </div>
         {realEstateRetainers.find((item) => item.featured && retainers[item.id])?.included && (
-          <ul className="calculator-includes">
-            {realEstateRetainers.find((item) => item.featured && retainers[item.id])?.included?.map((feature) => <li key={feature}>{feature}</li>)}
-          </ul>
+          <>
+            <ul className="calculator-includes">
+              {realEstateRetainers.find((item) => item.featured && retainers[item.id])?.included?.map((feature) => <li key={feature}>{feature}</li>)}
+            </ul>
+            {(() => {
+              const featured = realEstateRetainers.find((item) => item.featured && retainers[item.id]);
+              if (!featured?.valueTotal || featured.valueTotal <= featured.price) return null;
+              return (
+                <p className="calculator-value-note">
+                  À la carte value {money(featured.valueTotal)} — you pay {money(featured.price)}/mo. Save {money(featured.valueTotal - featured.price)} every month.
+                </p>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>
