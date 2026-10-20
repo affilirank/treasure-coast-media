@@ -327,9 +327,11 @@ export const realEstateGallery = [
 export const commercialGallery = [
   { id: "founder-portrait", title: "The Founder Portrait", detail: "Portrait suite · Vero Beach", category: "People & Process", image: "photo-1560250097-0b93528c311a", description: "Natural, modern founder imagery created to make a brand feel unmistakably human." },
   { id: "craft-in-motion", title: "Craft in Motion", detail: "Behind the scenes · 4K", category: "People & Process", image: "photo-1521737711867-e3b97375f902", description: "A working team captured in motion, with image-making designed for story-led campaigns." },
-  { id: "modern-studio", title: "Modern Studio", detail: "Commercial interiors · Palm Beach", category: "Place & Detail", image: "photo-1497366754035-f200968a6e72", description: "A contemporary workspace documented with clean lines, natural light and usable detail." },
-  { id: "wellness-brand", title: "A Better Kind of Wellness", detail: "Brand film still · Jupiter", category: "Founder Films", image: "photo-1540555700478-4be289fbecef", description: "A calm visual language for a boutique wellness team and its local clientele." },
-  { id: "retail-detail", title: "Retail, Considered", detail: "Storefront · Stuart", category: "Place & Detail", image: "photo-1441986300917-64674bd600d8", description: "Storefront imagery built for local discovery and brand-led digital campaigns." },
+  { id: "modern-studio", title: "Modern Studio", detail: "Commercial interiors · Palm Beach", category: "Place & Detail", image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80", description: "A contemporary workspace documented with clean lines, natural light and usable detail." },
+  { id: "warehouse-aerial", title: "Warehouse & Logistics", detail: "Aerial · Port St. Lucie", category: "Place & Detail", image: "https://images.pexels.com/photos/27793707/pexels-photo-27793707.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Aerial documentation of distribution and industrial facilities, sized for site and campaign use." },
+  { id: "industrial-logistics", title: "Industrial & Logistics", detail: "Operations · Fort Pierce", category: "Place & Detail", image: "https://images.pexels.com/photos/2804929/pexels-photo-2804929.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Working industrial environments captured with clean, credible detail for B2B marketing." },
+  { id: "restaurant-interior", title: "Restaurant, Considered", detail: "Hospitality · Stuart", category: "Place & Detail", image: "https://images.pexels.com/photos/37532766/pexels-photo-37532766.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Warm hospitality interiors built for local discovery and brand-led digital campaigns." },
+  { id: "retail-night", title: "Retail, Considered", detail: "Storefront · Stuart", category: "Place & Detail", image: "https://images.pexels.com/photos/65438/pexels-photo-65438.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Storefront imagery built for local discovery and brand-led digital campaigns." },
   { id: "brand-interview", title: "The Brand Interview", detail: "Founder story · Fort Pierce", category: "Founder Films", image: "photo-1516321318423-f06f85e504b3", description: "A founder-led interview shaped into a polished story for web, social and paid media." },
 ] as const;
 
@@ -342,28 +344,39 @@ export const stockImages = {
   comparison: "photo-1600596542815-ffad4c1539a9",
   comparisonInterior: "photo-1600566753086-00f18fb6b3ea",
   comparisonExterior: "photo-1600585154340-be6161a56a0c",
+  // Commercial picks (fix list item 22): free-license, hotlink-ready.
+  commercialOfficeExterior: "https://images.pexels.com/photos/934350/pexels-photo-934350.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  commercialOfficeInterior: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80",
+  commercialWarehouseAerial: "https://images.pexels.com/photos/27793707/pexels-photo-27793707.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  commercialIndustrial: "https://images.pexels.com/photos/2804929/pexels-photo-2804929.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  commercialRestaurant: "https://images.pexels.com/photos/37532766/pexels-photo-37532766.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  commercialRestaurantAlt: "https://images.pexels.com/photos/31071253/pexels-photo-31071253.jpeg?auto=compress&cs=tinysrgb&w=1600",
+  commercialRetailNight: "https://images.pexels.com/photos/65438/pexels-photo-65438.jpeg?auto=compress&cs=tinysrgb&w=1600",
   commercialFounder: "photo-1500648767791-00dcc994a43e",
   commercialTeam: "photo-1521737711867-e3b97375f902",
   commercialCraft: "photo-1621905251918-48416bd8575a",
-  commercialSpace: "photo-1497366754035-f200968a6e72",
-  commercialSalon: "photo-1560066984-138dadb4c035",
+  commercialSpace: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80",
+  commercialSalon: "https://images.pexels.com/photos/37532766/pexels-photo-37532766.jpeg?auto=compress&cs=tinysrgb&w=1600",
 } as const;
 
 export const videoSources = {
-  propertyTour: "https://cdn.coverr.co/videos/coverr-house-tour-4608/360p.mp4",
+  propertyTour: "/videos/walkthrough-1.mp4",
   propertyTourEmbed: "https://app.heygen.com/embeds/37a2682267c64f27979292528005ad35",
   propertyTourSecondEmbed: "https://app.heygen.com/embeds/f98d15d6f3a740c4ac4a529db533928f",
   realtorAiPresenterEmbed: "https://app.heygen.com/embeds/23590520d9d74f758b3c299ce6acff70",
   commercialAiPresenterEmbed: "https://app.heygen.com/embeds/e16aa7eb30d6420b80c6c14d1cb6aad9",
   commercialVslEmbed: "https://app.heygen.com/embeds/39f1ebb7c97945b2925c602a8ac6cef7",
   commercialPainPointEmbed: "https://app.heygen.com/embeds/a084195a226641109e17fcb5136f1177",
-  founderStory: "https://cdn.coverr.co/videos/coverr-a-man-talking-on-camera-9858/360p.mp4",
-  contractorCrew: "https://cdn.coverr.co/videos/coverr-construction-workers-454/360p.mp4",
-  craftProcess: "https://cdn.coverr.co/videos/coverr-carpenter-sawing-wood-6348/360p.mp4",
-  clientExperience: "https://cdn.coverr.co/videos/coverr-beauty-salon-6561/360p.mp4",
+  founderStory: "/videos/founder-story.mp4",
+  contractorCrew: "/videos/walkthrough-1.mp4",
+  craftProcess: "/videos/walkthrough-2.mp4",
+  clientExperience: "/videos/walkthrough-1.mp4",
 } as const;
 
 export function imageUrl(id: string, width = 1200) {
+  // Absolute URLs (e.g. Pexels/Unsplash picks) pass straight through; Unsplash photo
+  // IDs still build a resized source.
+  if (/^https?:\/\//.test(id)) return id;
   return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
 }
 

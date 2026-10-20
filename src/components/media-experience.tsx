@@ -452,13 +452,16 @@ function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
   const socialCards = [
     { label: "Hook A · Problem / solution", line: "Need a contractor you can count on in Vero?", image: stockImages.commercialCraft, video: videoSources.contractorCrew },
     { label: "Hook B · Behind the scenes", line: "A closer look at the care in every cut.", image: stockImages.commercialCraft, video: videoSources.craftProcess },
-    { label: "Hook C · Customer story", line: "See what a thoughtful visit feels like.", image: stockImages.commercialSalon, video: videoSources.clientExperience },
+    { label: "Hook C · Customer story", line: "See what a thoughtful visit feels like.", image: stockImages.commercialRestaurant, video: videoSources.clientExperience },
   ];
   const stills = [
-    { title: "Executive portrait", image: stockImages.commercialFounder },
-    { title: "The people behind the work", image: stockImages.commercialTeam },
-    { title: "Craft & equipment", image: stockImages.commercialCraft },
-    { title: "A place of your own", image: stockImages.commercialSpace },
+    { title: "Office exterior, day", image: stockImages.commercialOfficeExterior },
+    { title: "Office interior", image: stockImages.commercialOfficeInterior },
+    { title: "Warehouse aerial", image: stockImages.commercialWarehouseAerial },
+    { title: "Industrial & logistics", image: stockImages.commercialIndustrial },
+    { title: "Restaurant interior", image: stockImages.commercialRestaurant },
+    { title: "Restaurant, second look", image: stockImages.commercialRestaurantAlt },
+    { title: "Retail storefront at night", image: stockImages.commercialRetailNight },
   ];
 
   return (
@@ -495,9 +498,7 @@ function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
               <div className="case-study-content">
                 <div><strong>The goal</strong><span>Modernize brand identity and attract high-ticket local clientele.</span></div>
                 <div><strong>The deliverable</strong><span>One 90-sec master film plus three vertical ad hooks.</span></div>
-                <div><strong>Illustrative result</strong><span>+42% increase in online appointment bookings in 30 days.*</span></div>
               </div>
-              <p className="quote-note">*Sample case-study outcome for presentation. Replace with verified client data before publishing.</p>
             </details>
           </div>
           <div className="section-heading" style={{ marginTop: 68, marginBottom: 25 }}>
@@ -1264,7 +1265,7 @@ function BookingSection({
     { id: "name", label: "Your name", type: "text", placeholder: "Full name", required: true },
     { id: "email", label: "Email address", type: "email", placeholder: "you@company.com", required: true },
     { id: "phone", label: "Phone number", type: "tel", placeholder: "(772) 555-0100", required: true },
-    { id: "company", label: "Brokerage / company", type: "text", placeholder: "Company name" },
+    { id: "company", label: track === "real-estate" ? "Brokerage / company" : "Business / company", type: "text", placeholder: "Company name" },
   ];
 
   return (
@@ -1891,7 +1892,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
       </header>
 
       <section className="hero">
-        <div className="hero-photo"><Image src={imageUrl(stockImages.hero, 2200)} alt="Aerial view of a waterfront estate on Florida’s Treasure Coast" fill priority sizes="100vw" unoptimized /></div>
+        <div className="hero-photo">
+          {track === "commercial" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="https://images.pexels.com/photos/14589851/pexels-photo-14589851.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Modern commercial office building at golden hour" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <Image src={imageUrl(stockImages.hero, 2200)} alt="Aerial view of a waterfront estate on Florida’s Treasure Coast" fill priority sizes="100vw" unoptimized />
+          )}
+        </div>
         <div className="hero-shade" />
         <div className="shell hero-layout">
           <div>
