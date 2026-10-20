@@ -68,8 +68,6 @@ import {
   type RealEstateTierId,
   type RealEstateVideoId,
   type Track,
-  regularPrice,
-  regularVideoPrice,
   videoOptionList,
 } from "@/lib/site-data";
 
@@ -672,10 +670,9 @@ function ServicesSection({
   );
 }
 
-function PriceTag({ price, regular, prefix = "", suffix = "" }: { price: number; regular?: number; prefix?: string; suffix?: string }) {
+function PriceTag({ price, prefix = "", suffix = "" }: { price: number; prefix?: string; suffix?: string }) {
   return (
     <span className="price-reveal">
-      {regular !== undefined && regular > price && <del className="price-reveal-regular">{prefix}{money(regular)}</del>}
       <strong className="price-reveal-now">{prefix}{money(price)}{suffix}</strong>
     </span>
   );
@@ -692,7 +689,7 @@ function PricingGateway({ savings, onClose, onChoose }: { savings: number; onClo
         <div className="gateway-body">
           <span className="section-kicker">Before you build your quote</span>
           <h2 id="gateway-title">Two ways to book. <em>Packages save up to {money(savings)}.</em></h2>
-          <p>Build à la carte with exactly the video and enhancements you want, or pick a turnkey package that bundles media, video and a 30-day social campaign at a lower price. Every price shows its regular rate crossed out.</p>
+          <p>Build à la carte with exactly the video and enhancements you want, or pick a turnkey package that bundles media, video and a 30-day social campaign at a lower price.</p>
           <div className="gateway-actions">
             <button type="button" className="button-outline" onClick={() => onChoose("a-la-carte")}>Build à la carte</button>
             <button type="button" className="button-primary" onClick={() => onChoose("package")}>Choose a turnkey package <ArrowUpRight size={15} /></button>
@@ -727,7 +724,7 @@ function QuoteDrawer({
   const renderQuoteItem = (item: QuoteItem) => (
     <div className="quote-line" key={item.id}>
       <span>{item.label}{item.quantity > 1 ? ` × ${item.quantity}` : ""}{item.billing === "monthly" ? " / mo" : ""}{item.detail && <small className="quote-item-detail">{item.detail}</small>}{item.badge && <small className="quote-bundle-badge">{item.badge}</small>}</span>
-      <strong>{item.regularAmount !== undefined && item.regularAmount > item.amount && <del className="quote-regular">{money(item.regularAmount)}</del>}{money(item.amount)}</strong>
+      <strong>{money(item.amount)}</strong>
     </div>
   );
 
@@ -752,11 +749,11 @@ function QuoteDrawer({
         ) : quote?.items.map(renderQuoteItem)}
         {!quote && <p className="quote-empty">Choose a valid package and options to see your estimate.</p>}
       </div>
-      {track === "real-estate" && quote && quote.savings > 0 && <div className="quote-savings"><span>You save vs. regular pricing</span><strong>{money(quote.savings)}</strong></div>}
+      {track === "real-estate" && quote && quote.savings > 0 && <div className="quote-savings"><span>You save vs. à la carte</span><strong>{money(quote.savings)}</strong></div>}
       {discountAmount > 0 && <div className="quote-savings"><span>Promo applied at booking</span><strong>−{money(discountAmount)}</strong></div>}
       <div className="quote-total">
         <span>{track === "commercial" ? "Project + first month" : "Estimated total"}</span>
-        <strong>{discountAmount > 0 && <del>{money(originalTotal)}</del>}{money(Math.max(0, originalTotal - discountAmount))}</strong>
+        <strong>{money(Math.max(0, originalTotal - discountAmount))}</strong>
       </div>
       {quote && quote.recurring > 0 && <p className="quote-note">Includes {money(quote.recurring)} in monthly services after the initial production.</p>}
       {track === "real-estate" && <p className="quote-note">No Florida sales tax on eligible electronic media delivery. Final scope confirmed before capture.</p>}
@@ -839,7 +836,7 @@ function RealEstateCalculator({
       key={video.id}
       onClick={() => onVideoChange(video.id as RealEstateVideoId)}
     >
-      <span className="video-choice-price">{video.price === 0 ? "$0" : <PriceTag price={video.price} regular={regularVideoPrice(video.price)} prefix="+" />}</span>
+      <span className="video-choice-price">{video.price === 0 ? "$0" : <PriceTag price={video.price} prefix="+" />}</span>
       <strong>{video.name}</strong>
       <small>{video.detail}</small>
       <span className="video-choice-status">{videoId === video.id ? "Selected" : "Select video"}</span>
@@ -868,7 +865,7 @@ function RealEstateCalculator({
               <strong>{item.name}</strong>
               <small>{item.target}</small>
               <ul>{item.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-              <span>From <PriceTag price={item.prices[0]} regular={regularPrice(item.prices[0])} /></span>
+              <span>From <PriceTag price={item.prices[0]} /></span>
             </button>
           ))}
         </div>
@@ -914,8 +911,8 @@ function RealEstateCalculator({
                 <strong>{item.name}</strong>
                 <small>{item.target}</small>
                 <ul>{item.features.map((feature) => <li key={feature} className={/Social/.test(feature) ? "is-social" : undefined}>{feature}</li>)}</ul>
-                <span className="turnkey-price"><PriceTag key={tierId} price={item.prices[tierIndex]} regular={value?.regularValue} /></span>
-                {value && value.savings > 0 && <span className="turnkey-savings">Save {money(value.savings)}</span>}
+                <span className="turnkey-price"><PriceTag key={tierId} price={item.prices[tierIndex]} /></span>
+                {value && value.savings > 0 && <span className="turnkey-savings">Bundle &amp; save {money(value.savings)}</span>}
                 <span className="video-choice-status">{packageId === item.id ? "Selected" : "Select package"}</span>
               </button>
             );
@@ -956,7 +953,7 @@ function RealEstateCalculator({
                     onChange={(event) => onQuantityChange(addOn.id, event.target.checked ? Math.max(quantity, 1) : 0)}
                   />
                   <span className="check-box" aria-hidden="true">{isSelected && <Check size={11} />}</span>
-                  <span><strong>{addOn.label}</strong><small><PriceTag price={realEstateAddOnPrice(addOn.id)} regular={regularPrice(realEstateAddOnPrice(addOn.id))} /> / {unitLabel}</small>{addOn.included && <small>{addOn.included}</small>}</span>
+                  <span><strong>{addOn.label}</strong><small><PriceTag price={realEstateAddOnPrice(addOn.id)} /> / {unitLabel}</small>{addOn.included && <small>{addOn.included}</small>}</span>
                 </label>
                 {(addOn.unit === "photo" || addOn.unit === "room") && isSelected ? (
                   <label className="sr-only" htmlFor={`quantity-${addOn.id}`}>{addOn.label} quantity</label>

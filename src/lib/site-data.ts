@@ -148,16 +148,6 @@ export const realEstateVideoOptions = [
 export type VideoOption = { id: string; name: string; price: number; detail: string; ai?: boolean };
 export const videoOptionList: readonly VideoOption[] = realEstateVideoOptions;
 
-// Display-only "regular" prices. Videos list $100 above the current price; everything else 20% above, rounded up to $5.
-export const REGULAR_PRICE_MARKUP = 0.2;
-export const VIDEO_REGULAR_PREMIUM = 100;
-export function regularVideoPrice(price: number) {
-  return price > 0 ? price + VIDEO_REGULAR_PREMIUM : 0;
-}
-export function regularPrice(price: number) {
-  return price > 0 ? Math.ceil((price * (1 + REGULAR_PRICE_MARKUP)) / 5) * 5 : 0;
-}
-
 export type RealEstateVideoId = (typeof realEstateVideoOptions)[number]["id"];
 
 export type RealEstateAddOn = {
@@ -190,17 +180,16 @@ export function realEstatePackageValue(packageId: string, tierId: string) {
   const baseSuite = realEstatePackageList.find((item) => item.id === "standard-mls-suite")!;
   const video = realEstateVideoOptions.find((item) => item.id === pkg.includedVideoId);
   const lines = [
-    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex], regular: regularPrice(baseSuite.prices[tierIndex]) },
-    ...(video ? [{ label: video.name, amount: video.price, regular: regularVideoPrice(video.price) }] : []),
+    { label: "Full Media Suite (photos + drone + 2D floor plan)", amount: baseSuite.prices[tierIndex] },
+    ...(video ? [{ label: video.name, amount: video.price }] : []),
     ...Object.entries(pkg.includedAddOns ?? {}).map(([id, qty]) => {
       const addOn = realEstateAddOns.find((item) => item.id === id)!;
-      return { label: addOn.label, amount: addOn.price * qty, regular: regularPrice(addOn.price) * qty };
+      return { label: addOn.label, amount: addOn.price * qty };
     }),
   ];
   const value = lines.reduce((sum, line) => sum + line.amount, 0);
-  const regularValue = lines.reduce((sum, line) => sum + line.regular, 0);
   const price = pkg.prices[tierIndex];
-  return { lines, value, regularValue, price, savings: Math.max(0, regularValue - price) };
+  return { lines, value, price, savings: Math.max(0, value - price) };
 }
 
 export function realEstateAddOnPrice(id: RealEstateAddOnId) {
@@ -408,7 +397,7 @@ export function quoteRealEstate(
       quantity: 1,
       unitPrice: base,
       amount: base,
-      regularAmount: packageValue ? packageValue.regularValue : regularPrice(base),
+      regularAmount: packageValue ? packageValue.value : base,
       billing: "once",
       category: "base-media",
     },
@@ -418,7 +407,7 @@ export function quoteRealEstate(
       quantity: 1,
       unitPrice: selectedVideo.price,
       amount: videoIncluded ? 0 : selectedVideo.price,
-      regularAmount: videoIncluded ? 0 : regularVideoPrice(selectedVideo.price),
+      regularAmount: videoIncluded ? 0 : selectedVideo.price,
       billing: "once",
       category: "video",
       detail: selectedVideo.detail,
@@ -438,7 +427,7 @@ export function quoteRealEstate(
       quantity,
       unitPrice,
       amount: unitPrice * Math.max(0, quantity - includedQuantity),
-      regularAmount: regularPrice(unitPrice) * Math.max(0, quantity - includedQuantity),
+      regularAmount: unitPrice * Math.max(0, quantity - includedQuantity),
       billing: "once",
       category: "enhancement",
       badge: includedQuantity > 0 ? `${Math.min(quantity, includedQuantity)} included in package` : undefined,
