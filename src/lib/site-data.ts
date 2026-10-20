@@ -75,7 +75,7 @@ export const realEstatePackages = [
       "Zillow 3D Home Tour + Interactive Floor Plan",
       "1 Virtual Twilight Hero Still",
       "Drone Property Boundary Line Graphic",
-      "30-Day Automated Social Post Pack (Pre-scheduled via GoHighLevel CSV)",
+      "30-Day Automated Social Post Pack (first 30 days included — pre-scheduled via GoHighLevel; continue monthly)",
     ],
     prices: [895, 895, 995, 1095],
   },
@@ -94,7 +94,7 @@ export const realEstatePackages = [
       "Up to 2-Minute Cinematic Showcase Film (16:9 4K Master + Unbranded MLS Cut)",
       "Included Neighborhood, Waterfront & HOA Amenity Suite (marina, clubhouse, beach access, golf)",
       "1 Hand-Crafted Virtual Twilight Hero Still",
-      "30-Day Premium Social Syndication Engine (automated via GHL): 4 vertical reels, one per week (Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) and 8 branded feed/carousel posts with localized copy and hashtags",
+      "30-Day Premium Social Syndication Engine (first 30 days included; continue monthly): 4 vertical reels, one per week (Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) and 8 branded feed/carousel posts with localized copy and hashtags",
       "Priority 9:00 AM Next-Day Delivery Promise",
     ],
     prices: [1575, 1575, 1675, 1775],
@@ -168,8 +168,8 @@ export const realEstateAddOns: RealEstateAddOn[] = [
   { id: "decluttering", label: "Virtual Decluttering / Object Removal", price: 20, unit: "photo" },
   { id: "zillow-tour", label: "Zillow 3D Home Tour + Interactive Floor Plan", price: 85, unit: "property" },
   { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 125, unit: "property" },
-  { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 195, unit: "property", included: "Pre-scheduled via GoHighLevel CSV over 30 days." },
-  { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 250, unit: "property", included: "4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, automated via GHL." },
+  { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 195, unit: "property", included: "First 30 days included — daily posts pre-scheduled via GoHighLevel. Continue as an ongoing monthly service." },
+  { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 250, unit: "property", included: "First 30 days included: 4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, automated via GHL. Continue as an ongoing monthly service." },
 ] as const;
 
 export type RealEstateAddOnId = (typeof realEstateAddOns)[number]["id"];
