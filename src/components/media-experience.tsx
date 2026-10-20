@@ -34,10 +34,13 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
 } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { emptyPropertyDetails, type BookingPropertyDetails } from "@/lib/booking-property";
 import {
   commercialGallery,
@@ -1214,6 +1217,41 @@ function SlotPicker({ date, time, onPick, refreshKey }: { date: string; time: st
   );
 }
 
+function CardOnFile({
+  onComplete,
+  onError,
+}: {
+  onComplete: (setupIntentId: string) => void;
+  onError: (message: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  useEffect(() => {
+    if (!stripe || !elements) return;
+    let cancelled = false;
+    (async () => {
+      const result = await stripe.confirmSetup({ elements, redirect: "if_required" });
+      if (cancelled) return;
+      if (result.error) onError(result.error.message ?? "We couldn’t save that card. Please try again.");
+      else if (result.setupIntent && result.setupIntent.status === "succeeded") onComplete(result.setupIntent.id);
+    })();
+    return () => { cancelled = true; };
+  }, [stripe, elements, onComplete, onError]);
+
+  return (
+    <div className="card-onfile">
+      <label className="card-onfile-label"><ShieldCheck size={15} /> Card on file (no charge today)</label>
+      <PaymentElement
+        options={{
+          fields: { billingDetails: { email: "never", name: "never", phone: "never", address: "never" } },
+          wallets: { applePay: "never", googlePay: "never" },
+        }}
+      />
+    </div>
+  );
+}
+
 function BookingSection({
   track,
   quote,
@@ -1230,6 +1268,11 @@ function BookingSection({
   property,
   onPropertyChange,
   onPropertyRecheck,
+  cardClientSecret,
+  stripePromise,
+  onCardSetupComplete,
+  onCardSetupError,
+  cardSetupError,
 }: {
   promoInput: string;
   promoMessage: string;
@@ -1246,6 +1289,11 @@ function BookingSection({
   onBookingChange: (field: keyof BookingFields, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   error: string;
+  cardClientSecret: string | null;
+  stripePromise: Promise<import("@stripe/stripe-js").Stripe | null> | null;
+  onCardSetupComplete: (setupIntentId: string) => void;
+  onCardSetupError: (message: string) => void;
+  cardSetupError: string;
 }) {
   const fields: { id: keyof BookingFields; label: string; type: string; placeholder: string; required?: boolean }[] = [
     { id: "address", label: track === "real-estate" ? "Property address" : "Business name & location", type: "text", placeholder: "Street, city, ZIP", required: true },
@@ -1363,8 +1411,19 @@ function BookingSection({
       </div>
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
+          {cardClientSecret && stripePromise ? (
+            <Elements stripe={stripePromise} options={{ clientSecret: cardClientSecret, appearance: { theme: "stripe" } }}>
+              <CardOnFile
+                onComplete={onCardSetupComplete}
+                onError={onCardSetupError}
+              />
+            </Elements>
+          ) : (
+            <p className="card-onfile-note"><ShieldCheck size={14} /> Add your email above and we’ll hold a card on file — no charge today.</p>
+          )}
+          {cardSetupError && <p className="promo-message is-error" role="status">{cardSetupError}</p>}
           <div className="booking-form-footer">
-            <p>No deposit needed. Pick your date and we’ll confirm it right away by email. You only pay when your finished media is delivered.</p>
+            <p>No charge to book. We hold your card on file to reserve the date, and you only pay when your finished media is delivered.</p>
             {track === "real-estate" && !property.confirmed && (
               <p className="verify-gate" role="status">Confirm the property details above to continue.</p>
             )}
@@ -1477,6 +1536,13 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const lookupSeq = useRef(0);
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
+  const [cardSetupIntentId, setCardSetupIntentId] = useState<string | null>(null);
+  const [cardSetupError, setCardSetupError] = useState("");
+  const stripePromise = useMemo(
+    () => (process.env.NEXT_PUBLIC_STRIPE_PK ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK) : null),
+    [],
+  );
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
   const [promoMessage, setPromoMessage] = useState("");
@@ -1670,6 +1736,30 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     return () => clearTimeout(timer);
   }, [bookingFields.address, track, runPropertyLookup]);
 
+  // Card on file: fetch a Stripe SetupIntent (authorize-only, no charge) once the
+  // visitor reaches the booking form with a valid email. The Payment Element is
+  // mounted in setup mode and confirmed inside submitBooking.
+  useEffect(() => {
+    if (cardClientSecret || stripePromise === null) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingFields.email.trim())) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/booking/setup-intent", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: bookingFields.email.trim() }),
+        });
+        const data = (await response.json()) as { clientSecret?: string; error?: string };
+        if (!response.ok || !data.clientSecret) throw new Error(data.error ?? "Card setup unavailable.");
+        if (!cancelled) setCardClientSecret(data.clientSecret);
+      } catch {
+        if (!cancelled) setCardSetupError("Card-on-file setup is unavailable right now — you can still book and we’ll add your card at delivery.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [bookingFields.email, cardClientSecret, stripePromise]);
+
   function recheckPropertyRecords() {
     const { street, city, zipCode } = parseAddressInput(bookingFields.address);
     if (street.length < 5) {
@@ -1757,6 +1847,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               : null,
           },
           selection,
+          stripeSetupIntentId: cardSetupIntentId,
         }),
       });
       const result = await response.json() as Omit<BookingReceipt, "booking"> & { error?: string; checkoutUrl?: string; status?: string; depositAmount?: number; depositPercent?: number };
@@ -1913,6 +2004,11 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             property={propertyCheck}
             onPropertyChange={updatePropertyCheck}
             onPropertyRecheck={recheckPropertyRecords}
+            cardClientSecret={cardClientSecret}
+            stripePromise={stripePromise}
+            onCardSetupComplete={(setupIntentId) => setCardSetupIntentId(setupIntentId)}
+            onCardSetupError={(message) => setCardSetupError(message)}
+            cardSetupError={cardSetupError}
           />
           <FaqSection track={track} />
           <SiteFooter track={track} />
@@ -1956,7 +2052,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               <button className="icon-button lightbox-close" type="button" aria-label="Close booking summary" onClick={() => setReceipt(null)}><X size={17} /></button>
               <span className="confirmation-icon"><CheckCircle2 size={21} /></span>
               <h2 id="confirmation-title">{receipt.status === "confirmed" ? "Your shoot is booked." : receipt.status === "forwarded" ? "Request received." : "Free consult ready."}</h2>
-              <p>{receipt.status === "confirmed" ? "Your date is reserved and a confirmation email is on its way. No deposit is needed. You pay when your finished media is ready for delivery." : receipt.status === "forwarded" ? "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm." : "Your itemized request is ready for free review. This demo version does not send live data until a webhook is configured."}</p>
+              <p>{receipt.status === "confirmed" ? "Your date is reserved and a confirmation email is on its way. Your card is held on file to hold the date — you’re only charged when your finished media is delivered." : receipt.status === "forwarded" ? "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm." : "Your itemized request is ready for free review. This demo version does not send live data until a webhook is configured."}</p>
               <div className="confirmation-summary">
                 <div><span>Reference</span><strong>{receipt.referenceId.slice(0, 8).toUpperCase()}</strong></div>
                 <div><span>Location</span><strong>{receipt.booking.address}</strong></div>

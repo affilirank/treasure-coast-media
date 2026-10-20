@@ -31,6 +31,10 @@ export type StoredBooking = {
   selectedAddOns: QuoteItem[];
   paymentStatus: "awaiting_payment" | "paid" | "confirmed" | "expired";
   stripeCheckoutSessionId: string | null;
+  /** Stripe SetupIntent id for the card held on file (authorized at booking, charged on delivery). */
+  stripeSetupIntentId?: string | null;
+  /** Last 4 digits of the card held on file, for admin display only. */
+  cardLast4?: string | null;
   paidAt: string | null;
   confirmationEmailStatus: "pending" | "sent" | "not_configured";
 };

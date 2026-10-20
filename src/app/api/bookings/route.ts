@@ -1,4 +1,5 @@
 import { sendBookingConfirmation } from "@/lib/email";
+import Stripe from "stripe";
 import { confirmSlot, holdSlot, isDateString, isTimeString, releaseSlot } from "@/lib/calendar";
 import { saveBooking, type StoredBooking } from "@/lib/booking-store";
 import {
@@ -75,7 +76,6 @@ export async function POST(request: Request) {
 
   const track = body.track;
   let quote;
-
   if (track === "real-estate") {
     if (
       typeof body.selection.packageId !== "string" ||
@@ -177,7 +177,26 @@ export async function POST(request: Request) {
     return Response.json({ error: "The booking calendar is unavailable right now. Please contact the team directly." }, { status: 503 });
   }
 
-  // No deposit: payment happens through the media-delivery paywall, so the booking confirms immediately.
+  // Card on file: if the visitor authorized a card, verify the SetupIntent server-side
+  // (never trust a client-supplied id) and store it. Capture happens on delivery.
+  let stripeSetupIntentId: string | null = null;
+  let cardLast4: string | null = null;
+  const submittedIntent = clean(body.stripeSetupIntentId, 200);
+  if (submittedIntent && /^seti_[A-Za-z0-9]+$/.test(submittedIntent) && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const intent = await new Stripe(process.env.STRIPE_SECRET_KEY).setupIntents.retrieve(submittedIntent, { expand: ["payment_method"] });
+      if (intent.status === "succeeded" && intent.metadata?.purpose === "booking_card_on_file") {
+        stripeSetupIntentId = intent.id;
+        const pm = intent.payment_method;
+        if (pm && typeof pm !== "string" && pm.card) cardLast4 = pm.card.last4;
+      }
+    } catch {
+      // A bad/unverifiable intent just means we book without a card on file.
+    }
+  }
+
+  // No charge at booking: the card is held on file and payment happens through the
+  // media-delivery paywall when the finished media is ready.
   const record: StoredBooking = {
     referenceId,
     submittedAt,
@@ -191,6 +210,8 @@ export async function POST(request: Request) {
     ...bookingBreakdown,
     paymentStatus: "confirmed",
     stripeCheckoutSessionId: null,
+    stripeSetupIntentId,
+    cardLast4,
     paidAt: null,
     confirmationEmailStatus: "pending",
   };
