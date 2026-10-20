@@ -116,7 +116,7 @@ export default function CustomersAdmin() {
             </div>
           ))}
         </div>
-        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout: Gold 5%, Platinum 10%, Black Label 15%.</p>
+        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout on one-time shoots only: Gold 5%, Platinum 10%, Black Label 15%. Monthly retainers are excluded.</p>
       </section>
 
       <section className="mb-8 rounded-lg border border-neutral-200 bg-white p-5">

@@ -11,12 +11,14 @@ export type LoyaltyTier = {
   perk: string;
 };
 
-/** Mirrors the Merit Club tiers shown on the site. */
+/** Mirrors the Merit Club tiers shown on the site.
+ *  The percentage discount applies to one-time shoot/media services only —
+ *  monthly growth retainers are excluded (they carry the base shoot credit instead). */
 export const LOYALTY_TIERS: LoyaltyTier[] = [
   { id: "Silver", min: 1, max: 4, percentOff: 0, couponId: null, perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
-  { id: "Gold", min: 5, max: 9, percentOff: 5, couponId: "LOYALTY5", perk: "5% lifetime account discount + 1 free virtual twilight per listing." },
-  { id: "Platinum", min: 10, max: 19, percentOff: 10, couponId: "LOYALTY10", perk: "10% lifetime discount + free 2D floor plans + 2 rush credits." },
-  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 15, couponId: "LOYALTY15", perk: "15% discount + free quarterly agent branding/headshot session." },
+  { id: "Gold", min: 5, max: 9, percentOff: 5, couponId: "LOYALTY5", perk: "5% off one-time shoots for life + 1 free virtual twilight per listing." },
+  { id: "Platinum", min: 10, max: 19, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for life + free 2D floor plans + 2 rush credits." },
+  { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 15, couponId: "LOYALTY15", perk: "15% off one-time shoots for life + free quarterly agent branding/headshot session." },
 ];
 
 export function tierForShootCount(shootCount: number): LoyaltyTier {

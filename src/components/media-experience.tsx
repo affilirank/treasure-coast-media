@@ -767,9 +767,9 @@ function QuoteDrawer({
 function MeritClub() {
   const rewards = [
     { level: "Silver", count: "1–4 shoots", perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
-    { level: "Gold", count: "5–9 shoots", perk: "5% lifetime account discount + 1 free virtual twilight per listing." },
-    { level: "Platinum", count: "10–19 shoots", perk: "10% lifetime discount + free 2D floor plans + 2 rush credits." },
-    { level: "Black Label", count: "20+ shoots / teams", perk: "15% discount + free quarterly agent branding/headshot session." },
+    { level: "Gold", count: "5–9 shoots", perk: "5% off one-time shoots for life + 1 free virtual twilight per listing." },
+    { level: "Platinum", count: "10–19 shoots", perk: "10% off one-time shoots for life + free 2D floor plans + 2 rush credits." },
+    { level: "Black Label", count: "20+ shoots / teams", perk: "15% off one-time shoots for life + free quarterly agent branding/headshot session." },
   ];
 
   return (
@@ -779,7 +779,7 @@ function MeritClub() {
           <span className="section-kicker">Built for repeat partners</span>
           <h3 id="merit-club-title">The Merit Club <span>| Partner Volume Rewards</span></h3>
         </div>
-        <p>Earn rewards on every listing. Tracked automatically by your agent email.</p>
+        <p>Earn rewards on every listing. Tracked automatically by your agent email. <em>Club discounts apply to one-time shoot services — monthly growth retainers are excluded.</em></p>
       </div>
       <div className="merit-rewards-grid">
         {rewards.map((reward) => (

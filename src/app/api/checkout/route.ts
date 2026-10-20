@@ -29,8 +29,13 @@ export async function POST(request: Request) {
   const page = `${siteUrl()}/delivery/${listing.access_token}`;
 
   // Merit Club: auto-apply the member's lifetime discount when no manual discount is set.
+  // The Merit Club percentage applies to one-time shoot/media services only — never to
+  // monthly retainer lines (those carry the growth credit instead).
   let loyaltyCoupon: string | null = null;
-  if (discount === 0) {
+  const isMonthlyInvoice = /retainer|monthly|per month|\/mo\b|growth partner/i.test(
+    `${listing.package_type ?? ""}`,
+  );
+  if (discount === 0 && !isMonthlyInvoice) {
     try {
       const customer = await getCustomerByEmail(listing.agent_email);
       if (customer) loyaltyCoupon = tierForShootCount(customer.shoot_count).couponId;
