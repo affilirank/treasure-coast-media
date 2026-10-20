@@ -22,6 +22,8 @@ export type Listing = {
   is_paid: boolean;
   stripe_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  /** The booking this delivery came from, when it was created from one. */
+  booking_id?: string | null;
   access_token: string;
   reminder_count: number;
   last_reminder_at: string | null;

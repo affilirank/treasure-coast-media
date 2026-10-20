@@ -13,6 +13,7 @@ type Props = {
   address: string;
   amount: number;
   isPaid: boolean;
+  hasCardOnFile: boolean;
   returnedFromCheckout: boolean;
   returnedTip: boolean;
   images: GalleryImage[];
@@ -50,7 +51,7 @@ async function fetchDownloads(token: string, kind: Kind | "video") {
   return result.files as { name: string; url: string }[];
 }
 
-export default function DeliveryClient({ token, address, amount, isPaid, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot, socialPackage, returnedSocial }: Props) {
+export default function DeliveryClient({ token, address, amount, isPaid, hasCardOnFile, returnedFromCheckout, returnedTip, images, hasFloorPlan, hasVideo, mlsLink, showcaseLink, headline: initialHeadline, description: initialDescription, headshotUrl: initialHeadshot, socialPackage, returnedSocial }: Props) {
   const router = useRouter();
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -86,6 +87,17 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
     setPaying(true);
     setError("");
     try {
+      // If a card was held on file at booking, try to capture it first (no redirect).
+      if (hasCardOnFile) {
+        const charge = await fetch("/api/delivery/charge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }) });
+        const charged = await charge.json().catch(() => ({}));
+        if (charge.ok && charged.captured) {
+          router.replace(`${window.location.pathname}?paid=1`);
+          router.refresh();
+          return;
+        }
+        // Otherwise fall through to hosted Checkout (card needs authentication, etc.).
+      }
       const response = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }) });
       const result = await response.json();
       if (!response.ok || !result.url) throw new Error(result.error ?? "Unable to start checkout.");
@@ -241,7 +253,7 @@ export default function DeliveryClient({ token, address, amount, isPaid, returne
             Invoice Due: <strong>${amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong> — Complete payment to unlock full-resolution downloads &amp; MLS files.
           </p>
           <button onClick={pay} disabled={paying} className="flex items-center gap-2 rounded-md bg-gradient-to-b from-[#e1c697] to-[#c4a16a] px-5 py-2 font-bold text-[#14201e] disabled:opacity-60">
-            {paying && <Loader2 className="h-4 w-4 animate-spin" />} Pay Now with Card / Apple Pay
+            {paying && <Loader2 className="h-4 w-4 animate-spin" />} {hasCardOnFile ? "Pay Now with Card on File" : "Pay Now with Card / Apple Pay"}
           </button>
         </div>
       )}

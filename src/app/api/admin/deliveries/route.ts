@@ -86,10 +86,13 @@ export async function POST(request: Request) {
   }
 
   const db = supabaseAdmin();
+  const bookingIdInput = text(input.booking_id, 60) ?? "";
+  const booking_id = /^[0-9a-f-]{36}$/i.test(bookingIdInput) ? bookingIdInput : null;
   const { data: listing, error } = await db
     .from("listings")
     .insert({
       property_address,
+      booking_id,
       city: text(input.city, 80) || "Vero Beach",
       state: text(input.state, 2) || "FL",
       zip_code,

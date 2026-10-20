@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { deliveryLinks, getListingByToken, resolveHeadshotUrl } from "@/lib/delivery";
+import { loadBooking } from "@/lib/booking-store";
 import { getDownloadPresignedUrl, getPreviewPresignedUrl } from "@/lib/storage";
 import DeliveryClient, { type GalleryImage } from "./delivery-client";
 
@@ -26,12 +27,22 @@ export default async function DeliveryPage({ params, searchParams }: PageProps<"
   ).filter((image): image is GalleryImage => image !== null);
 
   const links = deliveryLinks(listing.access_token);
+
+  // Card on file (item 6b): offer one-tap payment when the delivery is linked to a booking
+  // that authorized a card. The server re-verifies everything before charging.
+  let hasCardOnFile = false;
+  if (!listing.is_paid && listing.booking_id) {
+    const booking = await loadBooking(listing.booking_id).catch(() => null);
+    hasCardOnFile = Boolean(booking?.stripeSetupIntentId);
+  }
+
   return (
     <DeliveryClient
       token={listing.access_token}
       address={listing.property_address}
       amount={Number(listing.invoice_amount)}
       isPaid={listing.is_paid}
+      hasCardOnFile={hasCardOnFile}
       returnedFromCheckout={paid === "1"}
       returnedTip={tipped === "1"}
       images={images}

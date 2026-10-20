@@ -264,7 +264,7 @@ export default function NewDeliveryForm() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          listing: { ...fields, ...tour, send_email: sendEmail },
+          listing: { ...fields, ...tour, send_email: sendEmail, booking_id: bookingId || null },
           assets: plans.map((p) => ({
             asset_type: p.asset_type,
             full_key: keyOf.get(p.full)!.key,
