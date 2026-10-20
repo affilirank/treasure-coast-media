@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { getListingByToken, siteUrl } from "@/lib/delivery";
-import { getCustomerByEmail } from "@/lib/customers";
-import { tierForShootCount } from "@/lib/loyalty";
+import { currentYearShootCount } from "@/lib/customers";
+import { loyaltyCouponForShootCount } from "@/lib/loyalty";
 
 export const runtime = "nodejs";
 
@@ -28,17 +28,18 @@ export async function POST(request: Request) {
   if (amountCents <= 0) return Response.json({ error: "This delivery has no balance due. Ask the team to waive it." }, { status: 409 });
   const page = `${siteUrl()}/delivery/${listing.access_token}`;
 
-  // Merit Club: auto-apply the member's lifetime discount when no manual discount is set.
-  // The Merit Club percentage applies to one-time shoot/media services only — never to
-  // monthly retainer lines (those carry the growth credit instead).
+  // Merit Club: auto-apply the member's annual discount when no manual discount is set.
+  // Rewards are earned on shoots within the current calendar year and reset each Jan 1,
+  // so we count this year's shoots rather than the stored lifetime total. The percentage
+  // applies to one-time shoot/media services only — never to monthly retainer lines.
   let loyaltyCoupon: string | null = null;
   const isMonthlyInvoice = /retainer|monthly|per month|\/mo\b|growth partner/i.test(
     `${listing.package_type ?? ""}`,
   );
   if (discount === 0 && !isMonthlyInvoice) {
     try {
-      const customer = await getCustomerByEmail(listing.agent_email);
-      if (customer) loyaltyCoupon = tierForShootCount(customer.shoot_count).couponId;
+      const yearShoots = await currentYearShootCount(listing.agent_email);
+      loyaltyCoupon = loyaltyCouponForShootCount(yearShoots);
     } catch {
       // Customers table may not be provisioned yet; checkout still works without loyalty.
     }

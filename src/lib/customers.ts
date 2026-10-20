@@ -2,7 +2,7 @@ import "server-only";
 import { getPrivateJson, listPrivateBlobs } from "@/lib/private-blob";
 import type { StoredBooking } from "@/lib/booking-store";
 import { supabaseAdmin } from "@/lib/supabase";
-import { tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
+import { loyaltyYearStart, tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
 
 export type Customer = {
   id: string;
@@ -26,6 +26,8 @@ type CustomerStats = {
   phone: string | null;
   company: string | null;
   shootCount: number;
+  /** Shoots completed in the current calendar year — drives the annual Merit Club tier. */
+  yearShootCount: number;
   lifetimeValue: number;
   lastActivityAt: string | null;
 };
@@ -47,12 +49,14 @@ function isEmail(value: string | null | undefined): value is string {
 /** Merge deliveries and bookings into one record per customer email. */
 export async function computeCustomerStats(): Promise<Map<string, CustomerStats>> {
   const stats = new Map<string, CustomerStats>();
+  const yearStart = loyaltyYearStart().toISOString();
   const bump = (email: string, patch: Partial<CustomerStats> & { shoot?: boolean; paid?: number }) => {
-    const existing = stats.get(email) ?? { email, name: null, phone: null, company: null, shootCount: 0, lifetimeValue: 0, lastActivityAt: null };
+    const existing = stats.get(email) ?? { email, name: null, phone: null, company: null, shootCount: 0, yearShootCount: 0, lifetimeValue: 0, lastActivityAt: null };
     if (patch.name) existing.name = patch.name;
     if (patch.phone) existing.phone = patch.phone;
     if (patch.company) existing.company = patch.company;
     if (patch.shoot) existing.shootCount += 1;
+    if (patch.shoot && patch.lastActivityAt && patch.lastActivityAt >= yearStart) existing.yearShootCount += 1;
     if (patch.paid) existing.lifetimeValue += patch.paid;
     if (patch.lastActivityAt && (!existing.lastActivityAt || patch.lastActivityAt > existing.lastActivityAt)) existing.lastActivityAt = patch.lastActivityAt;
     stats.set(email, existing);
@@ -99,7 +103,46 @@ export async function computeCustomerStats(): Promise<Map<string, CustomerStats>
   return stats;
 }
 
-/** Rebuild the customers table from delivery + booking history. */
+/**
+ * The Merit Club reset: count one customer's shoots *within the current calendar
+ * year* so the tier is re-earned each January 1. Reads the same sources as
+ * computeCustomerStats, but scoped to the member and to `yearStart`.
+ */
+export async function currentYearShootCount(email: string, now: Date = new Date()): Promise<number> {
+  const normalized = email.trim().toLowerCase();
+  if (!isEmail(normalized)) return 0;
+  const yearStart = loyaltyYearStart(now).toISOString();
+  let count = 0;
+
+  try {
+    const { data } = await supabaseAdmin()
+      .from("listings")
+      .select("agent_email, created_at")
+      .eq("agent_email", normalized)
+      .gte("created_at", yearStart)
+      .limit(5000)
+      .returns<{ agent_email: string | null; created_at: string | null }[]>();
+    count += data?.length ?? 0;
+  } catch {
+    // Listings unavailable; bookings may still count.
+  }
+
+  try {
+    const entries = (await listPrivateBlobs("bookings/")).filter((entry) => entry.pathname.endsWith(".json"));
+    const records = await Promise.all(entries.map((entry) => getPrivateJson<StoredBooking>(entry.pathname).catch(() => null)));
+    for (const record of records) {
+      if (!record || (record.paymentStatus !== "paid" && record.paymentStatus !== "confirmed")) continue;
+      if (record.booking.email?.trim().toLowerCase() !== normalized) continue;
+      if (record.submittedAt && record.submittedAt < yearStart) continue;
+      count += 1;
+    }
+  } catch {
+    // Booking storage unavailable; listings still count.
+  }
+
+  return count;
+}
+
 export async function syncCustomers() {
   const stats = await computeCustomerStats();
   const rows = [...stats.values()].map((stat) => ({
@@ -109,7 +152,7 @@ export async function syncCustomers() {
     company: stat.company,
     shoot_count: stat.shootCount,
     lifetime_value: Math.round(stat.lifetimeValue * 100) / 100,
-    tier: tierForShootCount(stat.shootCount).id,
+    tier: tierForShootCount(stat.yearShootCount).id,
     last_activity_at: stat.lastActivityAt,
     updated_at: new Date().toISOString(),
   }));
