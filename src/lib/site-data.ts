@@ -307,7 +307,7 @@ export const realEstateRetainers: MarketingRetainer[] = [
     tag: "MOST POPULAR · BEST VALUE",
     included: [
       "40 custom posts monthly across Instagram, Facebook, and LinkedIn ($595 value)",
-      "One dedicated Next.js lead-generation page with lead capture, instant SMS alerts, and KVCore, Follow Up Boss, or Lofty CRM sync ($450 value)",
+      "One dedicated lead-generation page with lead capture, instant SMS alerts, and KVCore, Follow Up Boss, or Lofty CRM sync ($450 value)",
       "Monthly listing and buyer campaign execution; ad spend paid directly to Meta ($650 value)",
       "Two branded local newsletters each month for your sphere ($245 value)",
       "One free base listing shoot each month up to 1,800 SQFT: photos, drone, and floor plan, or a $225 shoot credit ($225 value)",
