@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 type Customer = {
   id: string; email: string; name: string | null; phone: string | null; company: string | null;
   shoot_count: number; lifetime_value: number | string; tier: "Silver" | "Gold" | "Platinum" | "Black Label";
+  window_shoot_count?: number; window_renews_at?: string | null;
   last_activity_at: string | null; marketing_opt_in: boolean;
 };
 
@@ -116,7 +117,7 @@ export default function CustomersAdmin() {
             </div>
           ))}
         </div>
-        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout on one-time shoots only: Gold 5%, Platinum 7%, Black Label 10% (10% max). Rewards are earned on shoots completed each calendar year and reset every January 1. Monthly retainers are excluded.</p>
+        <p className="mt-2 text-xs text-neutral-500">Loyalty discounts auto-apply at checkout on one-time shoots only: Gold 5%, Platinum 7%, Black Label 10% (10% max). Each member&apos;s 12-month reward window starts on their first-ever shoot and renews on that anniversary. Monthly retainers are excluded.</p>
       </section>
 
       <section className="mb-8 rounded-lg border border-neutral-200 bg-white p-5">
@@ -169,8 +170,10 @@ export default function CustomersAdmin() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-neutral-500">{customer.shoot_count} job{customer.shoot_count === 1 ? "" : "s"}</span>
+                <span className="text-xs text-neutral-500" title="Shoots in the current 12-month reward window">{customer.window_shoot_count ?? 0} this year</span>
                 <span className="text-sm font-semibold text-neutral-900">${Number(customer.lifetime_value).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${tierTone[customer.tier]}`}>{customer.tier}</span>
+                {customer.window_renews_at && <span className="text-[10px] text-neutral-400">renews {new Date(customer.window_renews_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
               </div>
             </li>
           ))}

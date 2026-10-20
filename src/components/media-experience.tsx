@@ -780,7 +780,7 @@ function MeritClub() {
       <div className="merit-club-heading">
         <span className="section-kicker">Built for repeat partners</span>
         <h3 id="merit-club-title">The Merit Club <span>| Partner Volume Rewards</span></h3>
-        <p>Earn rewards on every listing, tracked automatically by your agent email. <em>Rewards are earned on shoots completed each calendar year and reset every January 1, so they are re-earned annually. Club discounts apply to one-time shoot services — monthly growth retainers are excluded.</em></p>
+        <p>Earn rewards on every listing, tracked automatically by your agent email. <em>Your 12-month reward window starts with your first shoot, and your tier is re-earned each year on that anniversary. Club discounts apply to one-time shoot services — monthly growth retainers are excluded.</em></p>
       </div>
       <div className="merit-rewards-grid">
         {rewards.map((reward) => (

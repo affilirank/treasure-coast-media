@@ -2,7 +2,7 @@ import "server-only";
 import { getPrivateJson, listPrivateBlobs } from "@/lib/private-blob";
 import type { StoredBooking } from "@/lib/booking-store";
 import { supabaseAdmin } from "@/lib/supabase";
-import { loyaltyYearStart, tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
+import { loyaltyWindow, tierForShootCount, type LoyaltyTierId } from "@/lib/loyalty";
 
 export type Customer = {
   id: string;
@@ -15,6 +15,8 @@ export type Customer = {
   shoot_count: number;
   lifetime_value: number | string;
   tier: LoyaltyTierId;
+  window_shoot_count?: number;
+  window_renews_at?: string | null;
   last_activity_at: string | null;
   notes: string | null;
   marketing_opt_in: boolean;
@@ -26,8 +28,10 @@ type CustomerStats = {
   phone: string | null;
   company: string | null;
   shootCount: number;
-  /** Shoots completed in the current calendar year — drives the annual Merit Club tier. */
+  /** Shoots in the current 12-month window — drives the Merit Club tier. */
   yearShootCount: number;
+  /** When the current reward window renews. */
+  windowRenewsAt: string | null;
   lifetimeValue: number;
   lastActivityAt: string | null;
 };
@@ -49,14 +53,20 @@ function isEmail(value: string | null | undefined): value is string {
 /** Merge deliveries and bookings into one record per customer email. */
 export async function computeCustomerStats(): Promise<Map<string, CustomerStats>> {
   const stats = new Map<string, CustomerStats>();
-  const yearStart = loyaltyYearStart().toISOString();
+  const shotsByEmail = new Map<string, string[]>();
   const bump = (email: string, patch: Partial<CustomerStats> & { shoot?: boolean; paid?: number }) => {
-    const existing = stats.get(email) ?? { email, name: null, phone: null, company: null, shootCount: 0, yearShootCount: 0, lifetimeValue: 0, lastActivityAt: null };
+    const existing = stats.get(email) ?? { email, name: null, phone: null, company: null, shootCount: 0, yearShootCount: 0, windowRenewsAt: null, lifetimeValue: 0, lastActivityAt: null };
     if (patch.name) existing.name = patch.name;
     if (patch.phone) existing.phone = patch.phone;
     if (patch.company) existing.company = patch.company;
-    if (patch.shoot) existing.shootCount += 1;
-    if (patch.shoot && patch.lastActivityAt && patch.lastActivityAt >= yearStart) existing.yearShootCount += 1;
+    if (patch.shoot) {
+      existing.shootCount += 1;
+      if (patch.lastActivityAt) {
+        const list = shotsByEmail.get(email) ?? [];
+        list.push(patch.lastActivityAt);
+        shotsByEmail.set(email, list);
+      }
+    }
     if (patch.paid) existing.lifetimeValue += patch.paid;
     if (patch.lastActivityAt && (!existing.lastActivityAt || patch.lastActivityAt > existing.lastActivityAt)) existing.lastActivityAt = patch.lastActivityAt;
     stats.set(email, existing);
@@ -100,29 +110,46 @@ export async function computeCustomerStats(): Promise<Map<string, CustomerStats>
     // Booking storage may be unavailable; listings still contribute.
   }
 
+  // Compute each member's current-window count from their first-ever shoot.
+  for (const [email, stat] of stats) {
+    const stamps = shotsByEmail.get(email) ?? [];
+    if (stamps.length === 0) continue;
+    const first = new Date(stamps.reduce((min, value) => (value < min ? value : min), stamps[0]));
+    const window = loyaltyWindow(first);
+    if (!window) continue;
+    const startISO = window.start.toISOString();
+    const renewsISO = window.renews.toISOString();
+    stat.yearShootCount = stamps.filter((value) => value >= startISO && value < renewsISO).length;
+    stat.windowRenewsAt = renewsISO;
+  }
+
   return stats;
 }
 
 /**
- * The Merit Club reset: count one customer's shoots *within the current calendar
- * year* so the tier is re-earned each January 1. Reads the same sources as
- * computeCustomerStats, but scoped to the member and to `yearStart`.
+ * The Merit Club reward window for one member: counts shoots within the 12 months
+ * since the anniversary of their first-ever shoot. Returns the count, the tier
+ * reached, and the window dates for progress display. Scopes to the member and to
+ * their window so the tier is re-earned each year.
  */
-export async function currentYearShootCount(email: string, now: Date = new Date()): Promise<number> {
+export async function memberRewardWindow(
+  email: string,
+  now: Date = new Date(),
+): Promise<{ shootCount: number; window: { start: Date; renews: Date } | null }> {
   const normalized = email.trim().toLowerCase();
-  if (!isEmail(normalized)) return 0;
-  const yearStart = loyaltyYearStart(now).toISOString();
-  let count = 0;
+  if (!isEmail(normalized)) return { shootCount: 0, window: null };
+
+  // Collect this member's shoot timestamps from both sources.
+  const stamps: string[] = [];
 
   try {
     const { data } = await supabaseAdmin()
       .from("listings")
       .select("agent_email, created_at")
       .eq("agent_email", normalized)
-      .gte("created_at", yearStart)
       .limit(5000)
       .returns<{ agent_email: string | null; created_at: string | null }[]>();
-    count += data?.length ?? 0;
+    for (const row of data ?? []) if (row.created_at) stamps.push(row.created_at);
   } catch {
     // Listings unavailable; bookings may still count.
   }
@@ -133,14 +160,22 @@ export async function currentYearShootCount(email: string, now: Date = new Date(
     for (const record of records) {
       if (!record || (record.paymentStatus !== "paid" && record.paymentStatus !== "confirmed")) continue;
       if (record.booking.email?.trim().toLowerCase() !== normalized) continue;
-      if (record.submittedAt && record.submittedAt < yearStart) continue;
-      count += 1;
+      if (record.submittedAt) stamps.push(record.submittedAt);
     }
   } catch {
     // Booking storage unavailable; listings still count.
   }
 
-  return count;
+  if (stamps.length === 0) return { shootCount: 0, window: null };
+
+  const first = new Date(stamps.reduce((min, value) => (value < min ? value : min), stamps[0]));
+  const window = loyaltyWindow(first, now);
+  if (!window) return { shootCount: 0, window: null };
+
+  const startISO = window.start.toISOString();
+  const renewsISO = window.renews.toISOString();
+  const shootCount = stamps.filter((value) => value >= startISO && value < renewsISO).length;
+  return { shootCount, window };
 }
 
 export async function syncCustomers() {
@@ -153,6 +188,8 @@ export async function syncCustomers() {
     shoot_count: stat.shootCount,
     lifetime_value: Math.round(stat.lifetimeValue * 100) / 100,
     tier: tierForShootCount(stat.yearShootCount).id,
+    window_shoot_count: stat.yearShootCount,
+    window_renews_at: stat.windowRenewsAt,
     last_activity_at: stat.lastActivityAt,
     updated_at: new Date().toISOString(),
   }));

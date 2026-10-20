@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { getListingByToken, siteUrl } from "@/lib/delivery";
-import { currentYearShootCount } from "@/lib/customers";
+import { memberRewardWindow } from "@/lib/customers";
 import { resolveLoyaltyCouponId, tierForShootCount } from "@/lib/loyalty";
 
 export const runtime = "nodejs";
@@ -29,8 +29,8 @@ export async function POST(request: Request) {
   const page = `${siteUrl()}/delivery/${listing.access_token}`;
 
   // Merit Club: auto-apply the member's annual discount when no manual discount is set.
-  // Rewards are earned on shoots within the current calendar year and reset each Jan 1,
-  // so we count this year's shoots rather than the stored lifetime total. The percentage
+  // Rewards are earned on shoots within the member's 12-month window (which starts on the
+  // anniversary of their first-ever shoot and rolls forward each year). The percentage
   // applies to one-time shoot/media services only — never to monthly retainer lines.
   let loyaltyCoupon: string | null = null;
   const isMonthlyInvoice = /retainer|monthly|per month|\/mo\b|growth partner/i.test(
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
   );
   if (discount === 0 && !isMonthlyInvoice) {
     try {
-      const yearShoots = await currentYearShootCount(listing.agent_email);
-      const tier = tierForShootCount(yearShoots);
+      const { shootCount } = await memberRewardWindow(listing.agent_email);
+      const tier = tierForShootCount(shootCount);
       loyaltyCoupon = await resolveLoyaltyCouponId(tier.couponId, tier.percentOff);
     } catch {
       // Customers table may not be provisioned yet; checkout still works without loyalty.

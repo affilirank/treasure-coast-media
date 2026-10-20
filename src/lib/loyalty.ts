@@ -14,13 +14,14 @@ export type LoyaltyTier = {
 /**
  * The Merit Club — annual partner rewards.
  *
- * Rewards are earned on shoots completed within the *current calendar year* and
- * reset every January 1. The percentage applies to one-time shoot/media services
+ * Rewards are earned on shoots completed within the member's 12-month reward
+ * window, which starts on the anniversary of their first-ever shoot and rolls
+ * forward each year. The percentage applies to one-time shoot/media services
  * only (monthly growth retainers are excluded — they carry the base shoot credit
  * instead), and is capped at 10% across every tier.
  *
- * Note: because the count resets each year, `tierForShootCount` must be given a
- * *current-year* shoot count, not a lifetime total.
+ * Note: because the window rolls, `tierForShootCount` must be given a
+ * *current-window* shoot count, not a lifetime total.
  */
 export const LOYALTY_TIERS: LoyaltyTier[] = [
   { id: "Silver", min: 1, max: 4, percentOff: 0, couponId: null, perk: "Next-morning 9:00 AM MLS delivery & dedicated scheduling." },
@@ -29,9 +30,28 @@ export const LOYALTY_TIERS: LoyaltyTier[] = [
   { id: "Black Label", min: 20, max: Number.POSITIVE_INFINITY, percentOff: 10, couponId: "LOYALTY10", perk: "10% off one-time shoots for the rest of the year + 2 rush credits + one annual agent branding/headshot session + first-priority scheduling." },
 ];
 
-/** January 1 of the current year, used to scope the annual shoot count. */
-export function loyaltyYearStart(now: Date = new Date()): Date {
-  return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+const YEAR_MS = 365.25 * 24 * 60 * 60 * 1000;
+
+/**
+ * The reward window for a member runs 12 months from the anniversary of their
+ * first-ever shoot, then rolls forward each year. Returns the start of the
+ * *current* window (and the next renewal), or null when they have no shoots yet.
+ */
+export function loyaltyWindow(firstShootAt: Date | null, now: Date = new Date()): { start: Date; renews: Date } | null {
+  if (!firstShootAt || Number.isNaN(firstShootAt.getTime())) return null;
+  if (now.getTime() < firstShootAt.getTime()) return { start: firstShootAt, renews: new Date(firstShootAt.getTime() + YEAR_MS) };
+  const elapsedYears = Math.floor((now.getTime() - firstShootAt.getTime()) / YEAR_MS);
+  const start = new Date(firstShootAt.getTime() + elapsedYears * YEAR_MS);
+  return { start, renews: new Date(start.getTime() + YEAR_MS) };
+}
+
+/** The tier a member reaches at a given shoot count, and how far the next one is. */
+export function loyaltyProgress(shootCount: number): { tier: LoyaltyTier; next: LoyaltyTier | null; toNext: number } {
+  const count = Number.isFinite(shootCount) ? Math.max(0, Math.floor(shootCount)) : 0;
+  const index = LOYALTY_TIERS.findIndex((tier) => count >= tier.min && count <= tier.max);
+  const tier = index >= 0 ? LOYALTY_TIERS[index] : LOYALTY_TIERS[0];
+  const next = LOYALTY_TIERS[index + 1] ?? null;
+  return { tier, next, toNext: next ? Math.max(0, next.min - count) : 0 };
 }
 
 export function tierForShootCount(shootCount: number): LoyaltyTier {
