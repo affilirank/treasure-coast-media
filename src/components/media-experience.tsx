@@ -542,20 +542,30 @@ function CommercialVslSection({
     "Inconsistent posting and outdated social feeds that make your business look closed or amateur to high-ticket clients.",
   ];
   const stats = [
-    { value: "86%", label: "of consumers state high-quality video convinced them to purchase a local service or high-ticket product." },
-    { value: "2.6×", label: "higher conversion rates on dedicated custom landing pages compared to standard multi-page websites." },
-    { value: "400%", label: "higher lead conversion rate when lead response occurs within the first 60 seconds via automated SMS." },
-    { value: "9:00 AM", label: "next-day delivery standard on commercial social cutdowns so your campaigns never stall." },
+    { value: "85%", label: "of people say they have been convinced to buy a product or service after watching a video.", source: "Wyzowl, State of Video Marketing" },
+    { value: "96%", label: "of people have watched an explainer video to learn about a product or service.", source: "Wyzowl, State of Video Marketing" },
+    { value: "21×", label: "more likely to qualify a lead when you respond within 5 minutes instead of 30.", source: "MIT / InsideSales Lead Response Management Study" },
+    { value: "~2×", label: "higher median conversion rate on a dedicated landing page versus a general website page.", source: "Unbounce Conversion Benchmark Report" },
   ];
 
   return (
     <section className="commercial-vsl section section-dark" aria-labelledby="commercial-vsl-title">
       <div className="shell">
         <div className="commercial-vsl-heading">
-          <span className="section-kicker">Commercial growth · Executive briefing</span>
+          <span className="section-kicker">Commercial growth · For Treasure Coast business owners</span>
           <h2 id="commercial-vsl-title">How Treasure Coast Businesses Use High-Impact Video &amp; Growth Funnels to Out-Convert Competitors.</h2>
-          <p>Watch this executive breakdown before spending another dollar on fragmented advertising.</p>
+          <p>Watch this short breakdown before spending another dollar on fragmented advertising.</p>
         </div>
+
+        {/* Lead with the problem so a visitor recognises themselves before we pitch. */}
+        <div className="commercial-pain-card">
+          <div>
+            <span className="section-kicker">Where budgets disappear</span>
+            <h3>The Local Marketing Trap That Wastes Thousands:</h3>
+          </div>
+          <ul>{painPoints.map((point) => <li key={point}>{point}</li>)}</ul>
+        </div>
+
         <div className="commercial-vsl-frame">
           <iframe
             src={videoSources.commercialVslEmbed}
@@ -569,13 +579,6 @@ function CommercialVslSection({
           <button className="vsl-secondary-action" type="button" onClick={onCalculate}>Calculate Campaign Pricing <ArrowRight size={15} /></button>
         </div>
 
-        <div className="commercial-pain-card">
-          <div>
-            <span className="section-kicker">Where budgets disappear</span>
-            <h3>The Local Marketing Trap That Wastes Thousands:</h3>
-          </div>
-          <ul>{painPoints.map((point) => <li key={point}>{point}</li>)}</ul>
-        </div>
         <div className="commercial-pain-video">
           <iframe
             src={`${videoSources.commercialPainPointEmbed}?autoplay=1&muted=1`}
@@ -584,15 +587,16 @@ function CommercialVslSection({
             allowFullScreen
           />
         </div>
-        <div className="commercial-stats" aria-label="Commercial marketing performance claims">
+        <div className="commercial-stats" aria-label="Independent research on video and lead response">
           {stats.map((stat) => (
             <article className="commercial-stat" key={stat.value}>
               <strong>{stat.value}</strong>
               <p>{stat.label}</p>
+              <cite>{stat.source}</cite>
             </article>
           ))}
         </div>
-        <p className="commercial-stats-note">Performance figures are supplied marketing claims; verify and cite primary sources before using them in paid campaigns.</p>
+        <p className="commercial-stats-note">Independent industry research, not a guarantee of results. Sources: Wyzowl State of Video Marketing; MIT / InsideSales Lead Response Management Study; Unbounce Conversion Benchmark Report.</p>
       </div>
     </section>
   );
@@ -1878,14 +1882,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         <div className="shell nav-shell">
           <Brand track={track} />
           <nav className="desktop-nav" aria-label="Main navigation">
-            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#ai-presenter">AI presenter</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Free consult <ArrowUpRight size={13} /></a>
+            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#ai-presenter">AI presenter</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Book a Call <ArrowUpRight size={13} /></a>
           </nav>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
         <nav className={`mobile-nav${menuOpen ? " is-open" : ""}`} aria-label="Mobile navigation">
-          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#ai-presenter" onClick={() => setMenuOpen(false)}>AI presenter</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Free consult <ArrowUpRight size={12} /></a>
+          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#ai-presenter" onClick={() => setMenuOpen(false)}>AI presenter</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Book a Call <ArrowUpRight size={12} /></a>
         </nav>
       </header>
 
@@ -1904,6 +1908,11 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             <span className="eyebrow">Treasure Coast · Palm Beaches · Florida</span>
             <h1>{track === "real-estate" ? <>Real Estate Listing Media &amp; <em>Agent Marketing.</em></> : <>Commercial Video &amp; <em>Local Growth.</em></>}</h1>
             <p className="hero-copy">{track === "real-estate" ? "Standout listing photography, HD aerials, floor plans, walkthrough films, and marketing that keeps your name in front of Treasure Coast buyers and sellers." : "Founder videos, direct-response ads, AI presenter promos, and lead-generation campaigns built to help Treasure Coast businesses earn more customers."}</p>
+            {track === "commercial" && (
+              <p className="hero-price-anchor">
+                Brand films from <strong>$1,495</strong> · Direct-response ad suites from <strong>$2,495</strong> · Fixed scope, priced before we shoot.
+              </p>
+            )}
             <TrackSelector track={track} onChange={changeTrack} />
             <div className="hero-track-bridge">
               <span className="hero-track-bridge-icon" aria-hidden="true">{track === "real-estate" ? <Camera size={17} /> : <Home size={17} />}</span>
@@ -2019,8 +2028,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
             <motion.section className="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirmation-title" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <button className="icon-button lightbox-close" type="button" aria-label="Close booking summary" onClick={() => setReceipt(null)}><X size={17} /></button>
               <span className="confirmation-icon"><CheckCircle2 size={21} /></span>
-              <h2 id="confirmation-title">{receipt.status === "confirmed" ? "Your shoot is booked." : receipt.status === "forwarded" ? "Request received." : "Free consult ready."}</h2>
-              <p>{receipt.status === "confirmed" ? "Your date is reserved and a confirmation email is on its way. Your card is held on file to hold the date — you’re only charged when your finished media is delivered." : receipt.status === "forwarded" ? "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm." : "Your itemized request is ready for free review. This demo version does not send live data until a webhook is configured."}</p>
+              <h2 id="confirmation-title">{receipt.status === "confirmed" ? "Your shoot is booked." : "Request received."}</h2>
+              <p>{receipt.status === "confirmed" ? "Your date is reserved and a confirmation email is on its way. Your card is held on file to hold the date — you’re only charged when your finished media is delivered." : "Your preferred shoot time and itemized scope have been sent to the booking team. We’ll be in touch to confirm."}</p>
               <div className="confirmation-summary">
                 <div><span>Reference</span><strong>{receipt.referenceId.slice(0, 8).toUpperCase()}</strong></div>
                 <div><span>Location</span><strong>{receipt.booking.address}</strong></div>
@@ -2030,7 +2039,6 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
                 <div className="confirmation-total"><span>Estimated total</span><strong>{money(receipt.total)}</strong></div>
                 {receipt.recurring > 0 && <div><span>Recurring after production</span><strong>{money(receipt.recurring)} / mo</strong></div>}
               </div>
-              {receipt.status === "preview" && <p className="confirmation-status">Free demo mode · No request was transmitted or stored. Add a webhook later if you want live submissions.</p>}
               <button className="button-dark" type="button" onClick={() => setReceipt(null)}>Back to your estimate</button>
             </motion.section>
           </motion.div>

@@ -275,12 +275,13 @@ export const commercialRetainers: MarketingRetainer[] = [
     featured: true,
     tag: "BEST VALUE · FULL SYSTEM",
     included: [
-      "40 custom monthly posts across Meta, Google Business, and LinkedIn",
-      "One fast appointment or quote-capture landing page",
-      "Instant SMS and email lead notifications in under 60 seconds",
-      "Meta and Google local lead-generation campaign management",
-      "One monthly 90-minute on-site capture session for b-roll, founder updates, and testimonials",
+      "40 custom monthly posts across Meta, Google Business, and LinkedIn ($650 value)",
+      "One fast appointment or quote-capture landing page ($450 value)",
+      "Instant SMS and email lead notifications in under 60 seconds ($450 value)",
+      "Meta and Google local lead-generation campaign management; ad spend paid directly to the platforms ($650 value)",
+      "One monthly 90-minute on-site capture session for b-roll, founder updates, and testimonials ($450 value)",
     ],
+    valueTotal: 2650,
   },
 ] as const;
 
