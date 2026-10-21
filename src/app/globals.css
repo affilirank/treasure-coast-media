@@ -172,6 +172,10 @@ img, video { display: block; max-width: 100%; }
 .gallery-card:nth-child(6n + 1), .gallery-card:nth-child(6n + 4) { grid-column: span 5; grid-row: span 2; }
 .gallery-card:nth-child(6n + 2), .gallery-card:nth-child(6n + 5) { grid-column: span 4; }
 .gallery-card:nth-child(6n + 3), .gallery-card:nth-child(6n + 6) { grid-column: span 3; }
+/* Portrait source images need a taller, narrower cell so the subject is not
+   cropped to the chin when a full-length photo lands in a wide landscape box. */
+.gallery-card.gallery-card-portrait { grid-column: span 4; grid-row: span 3; }
+.gallery-card.gallery-card-portrait .gallery-image img { object-fit: cover; object-position: center top; }
 .gallery-image, .gallery-overlay { position: absolute; inset: 0; }
 .gallery-image img { object-fit: cover; object-position: center top; transition: transform 650ms cubic-bezier(.2, .7, .2, 1); }
 .gallery-card:hover .gallery-image img { transform: scale(1.045); }
@@ -655,6 +659,7 @@ img, video { display: block; max-width: 100%; }
 	.filter-button { flex: 0 0 auto; min-height: 33px; padding-inline: 10px; font-size: 9px; }
 	.gallery-grid { grid-auto-rows: 184px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 	.gallery-card, .gallery-card:nth-child(6n + 1), .gallery-card:nth-child(6n + 2), .gallery-card:nth-child(6n + 3), .gallery-card:nth-child(6n + 4), .gallery-card:nth-child(6n + 5), .gallery-card:nth-child(6n + 6) { grid-column: span 1; grid-row: span 1; }
+	.gallery-card.gallery-card-portrait { grid-column: span 1; grid-row: span 2; }
 	.gallery-card:nth-child(5n + 1) { grid-column: span 2; }
 	.gallery-copy { right: 10px; bottom: 11px; left: 10px; }
 	.gallery-copy strong { font-size: 17px; }
