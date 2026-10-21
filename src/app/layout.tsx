@@ -3,7 +3,7 @@ import "./globals.css";
 
 const BASE_URL = "https://www.meritmediafl.com";
 const DESCRIPTION =
-  "Next-day HDR real estate photography, 4K aerial drone, schematic floor plans, and high-yield commercial video ads for the Treasure Coast & Palm Beaches. Next-morning delivery promise.";
+  "Next-day HDR real estate photography, HD aerial drone, schematic floor plans, and high-yield commercial video ads for the Treasure Coast & Palm Beaches. Next-morning delivery promise.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

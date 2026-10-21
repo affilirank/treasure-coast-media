@@ -608,7 +608,7 @@ function ServicesSection({
   const services: { title: string; detail: string; price?: string; badge?: string; specs?: string[] }[] = track === "real-estate"
     ? [
         { title: "Architectural HDR", detail: "Carefully blended exposures, clean verticals and natural window detail." },
-        { title: "4K Aerial Stills", detail: "FAA Part 107 drone perspectives that make the setting easy to understand." },
+        { title: "HD Aerial Stills", detail: "FAA Part 107 drone perspectives that make the setting easy to understand." },
         { title: "Listing Films", detail: "Stabilized walkthroughs, licensed music and 9:16 social cutdowns." },
         { title: "Measured Floor Plans", detail: "Readable 2D floor plans included with every standard media package." },
         { title: "Twilight & Staging", detail: "On-site sunset capture, virtual dusk and thoughtful virtual furnishing." },
@@ -1903,7 +1903,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           <div>
             <span className="eyebrow">Treasure Coast · Palm Beaches · Florida</span>
             <h1>{track === "real-estate" ? <>Real Estate Listing Media &amp; <em>Agent Marketing.</em></> : <>Commercial Video &amp; <em>Local Growth.</em></>}</h1>
-            <p className="hero-copy">{track === "real-estate" ? "Standout listing photography, 4K aerials, floor plans, walkthrough films, and marketing that keeps your name in front of Treasure Coast buyers and sellers." : "Founder videos, direct-response ads, AI presenter promos, and lead-generation campaigns built to help Treasure Coast businesses earn more customers."}</p>
+            <p className="hero-copy">{track === "real-estate" ? "Standout listing photography, HD aerials, floor plans, walkthrough films, and marketing that keeps your name in front of Treasure Coast buyers and sellers." : "Founder videos, direct-response ads, AI presenter promos, and lead-generation campaigns built to help Treasure Coast businesses earn more customers."}</p>
             <TrackSelector track={track} onChange={changeTrack} />
             <div className="hero-track-bridge">
               <span className="hero-track-bridge-icon" aria-hidden="true">{track === "real-estate" ? <Camera size={17} /> : <Home size={17} />}</span>

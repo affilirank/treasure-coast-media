@@ -58,7 +58,7 @@ export const realEstatePackages = [
     name: "Full Media Suite (Photos + Drone + 2D Floor Plan)",
     target: "A complete listing-ready media foundation.",
     badge: undefined,
-    features: ["HDR Stills", "5–8 4K Aerials", "Laser 2D Schematic Floor Plan"],
+    features: ["30+ HDR Stills", "4–6 HD Aerials", "Laser 2D Schematic Floor Plan"],
     prices: [249, 325, 400, 500],
   },
   {
@@ -70,7 +70,7 @@ export const realEstatePackages = [
     includedVideoId: "realtor-hosted-branding-reel",
     includedAddOns: { "zillow-tour": 1, "virtual-twilight": 1, "boundary-outline": 1, "social-post-pack": 1 },
     features: [
-      "Standard Media Suite: ~35 HDR Stills, 5–8 4K Aerials, 2D Schematic Floor Plan",
+      "Standard Media Suite: 30+ HDR Stills, 4–6 HD Aerials, 2D Schematic Floor Plan",
       "60-Sec Realtor-Hosted Branding Reel (9:16 Vertical + MLS-compliant Cut)",
       "Zillow 3D Home Tour + Interactive Floor Plan",
       "1 Virtual Twilight Hero Still",
