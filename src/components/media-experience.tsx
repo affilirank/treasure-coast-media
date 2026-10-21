@@ -476,7 +476,7 @@ function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
           <div className="commercial-showcase-grid">
             <div className="video-feature">
               <div className="video-feature-media">
-                <video autoPlay loop muted playsInline preload="metadata" poster="/videos/founder-story-poster.jpg" aria-label="Looping cinematic commercial brand film">
+                <video autoPlay loop muted playsInline preload="metadata" poster="/videos/founder-story-poster-v2.jpg" aria-label="Looping cinematic commercial brand film">
                   <source src={videoSources.founderStory} type="video/mp4" />
                 </video>
               </div>
@@ -2017,7 +2017,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
                   allowFullScreen
                 />
               ) : (
-                <video autoPlay controls playsInline poster="/videos/founder-story-poster.jpg"><source src={videoSources.founderStory} type="video/mp4" /></video>
+                <video autoPlay controls playsInline poster="/videos/founder-story-poster-v2.jpg"><source src={videoSources.founderStory} type="video/mp4" /></video>
               )}
               <div className="video-modal-title">{track === "real-estate" ? "Golden Hour Luxury Mansion Tour · Agent walkthrough" : "Founder story · Brand film"}</div>
             </motion.section>

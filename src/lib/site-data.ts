@@ -370,7 +370,7 @@ export const videoSources = {
   commercialAiPresenterEmbed: "https://app.heygen.com/embeds/e16aa7eb30d6420b80c6c14d1cb6aad9",
   commercialVslEmbed: "https://app.heygen.com/embeds/39f1ebb7c97945b2925c602a8ac6cef7",
   commercialPainPointEmbed: "https://app.heygen.com/embeds/a084195a226641109e17fcb5136f1177",
-  founderStory: "/videos/founder-story.mp4",
+  founderStory: "/videos/founder-story-v2.mp4",
   // Commercial social hooks — free-license Pixabay clips, self-hosted.
   contractorCrew: "/videos/hook-a-suit-walk.mp4",
   craftProcess: "/videos/hook-b-car-dealership.mp4",
