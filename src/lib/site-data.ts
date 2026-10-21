@@ -328,14 +328,14 @@ export const realEstateGallery = [
 ] as const;
 
 export const commercialGallery = [
-  { id: "founder-portrait", title: "The Founder Portrait", detail: "Portrait suite · Vero Beach", category: "People & Process", image: "photo-1560250097-0b93528c311a", description: "Natural, modern founder imagery created to make a brand feel unmistakably human." },
-  { id: "craft-in-motion", title: "Craft in Motion", detail: "Behind the scenes · 4K", category: "People & Process", image: "photo-1521737711867-e3b97375f902", description: "A working team captured in motion, with image-making designed for story-led campaigns." },
+  { id: "founder-portrait", title: "The Founder Portrait", detail: "Portrait suite · Vero Beach", category: "People & Process", image: "photo-1560250097-0b93528c311a", focus: "face", description: "Natural, modern founder imagery created to make a brand feel unmistakably human." },
+  { id: "craft-in-motion", title: "Craft in Motion", detail: "Behind the scenes · 4K", category: "People & Process", image: "photo-1521737711867-e3b97375f902", focus: "face", description: "A working team captured in motion, with image-making designed for story-led campaigns." },
   { id: "modern-studio", title: "Modern Studio", detail: "Commercial interiors · Palm Beach", category: "Place & Detail", image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80", description: "A contemporary workspace documented with clean lines, natural light and usable detail." },
   { id: "warehouse-aerial", title: "Warehouse & Logistics", detail: "Aerial · Port St. Lucie", category: "Place & Detail", image: "https://images.pexels.com/photos/27793707/pexels-photo-27793707.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Aerial documentation of distribution and industrial facilities, sized for site and campaign use." },
   { id: "industrial-logistics", title: "Industrial & Logistics", detail: "Operations · Fort Pierce", category: "Place & Detail", image: "https://images.pexels.com/photos/2804929/pexels-photo-2804929.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Working industrial environments captured with clean, credible detail for B2B marketing." },
   { id: "restaurant-interior", title: "Restaurant, Considered", detail: "Hospitality · Stuart", category: "Place & Detail", image: "https://images.pexels.com/photos/37532766/pexels-photo-37532766.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Warm hospitality interiors built for local discovery and brand-led digital campaigns." },
   { id: "retail-night", title: "Retail, Considered", detail: "Storefront · Stuart", category: "Place & Detail", image: "https://images.pexels.com/photos/65438/pexels-photo-65438.jpeg?auto=compress&cs=tinysrgb&w=1600", description: "Storefront imagery built for local discovery and brand-led digital campaigns." },
-  { id: "brand-interview", title: "The Brand Interview", detail: "Founder story · Fort Pierce", category: "Founder Films", image: "photo-1516321318423-f06f85e504b3", description: "A founder-led interview shaped into a polished story for web, social and paid media." },
+  { id: "brand-interview", title: "The Brand Interview", detail: "Founder story · Fort Pierce", category: "Founder Films", image: "photo-1516321318423-f06f85e504b3", focus: "face", description: "A founder-led interview shaped into a polished story for web, social and paid media." },
 ] as const;
 
 export type GalleryItem =
@@ -377,10 +377,15 @@ export const videoSources = {
   clientExperience: "/videos/hook-c-office.mp4",
 } as const;
 
-export function imageUrl(id: string, width = 1200) {
+export function imageUrl(id: string, width = 1200, focus?: "face") {
   // Absolute URLs (Pexels/Unsplash picks) and root-relative assets (self-hosted posters)
   // pass straight through; Unsplash photo IDs still build a resized source.
   if (/^https?:\/\//.test(id) || id.startsWith("/")) return id;
+  // Portrait/person shots use Unsplash's face-aware crop so a headshot never gets
+  // clipped to the chin when it is placed in a wide gallery cell.
+  if (focus === "face") {
+    return `https://images.unsplash.com/${id}?auto=format&fit=facearea&facepad=3.5&w=${width}&h=${Math.round(width * 1.25)}&q=85`;
+  }
   return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
 }
 

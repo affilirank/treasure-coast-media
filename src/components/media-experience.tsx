@@ -305,7 +305,7 @@ function GallerySection({
             >
               <span className="gallery-image">
                 <Image
-                  src={imageUrl(item.image, 1100)}
+                  src={imageUrl(item.image, 1100, "focus" in item ? item.focus : undefined)}
                   alt={item.title}
                   fill
                   sizes="(max-width: 760px) 50vw, 42vw"
@@ -1999,7 +1999,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               <button className="icon-button lightbox-close" type="button" aria-label="Close image viewer" onClick={() => setSelectedGallery(null)}><X size={17} /></button>
               <button className="icon-button lightbox-arrow previous" type="button" aria-label="Previous image" onClick={() => moveGallery(-1)}><ArrowLeft size={17} /></button>
               <button className="icon-button lightbox-arrow next" type="button" aria-label="Next image" onClick={() => moveGallery(1)}><ArrowRight size={17} /></button>
-              <div className="lightbox-image"><Image src={imageUrl(selectedGallery.image, 1700)} alt={selectedGallery.title} fill sizes="(max-width: 760px) 100vw, 70vw" unoptimized /></div>
+              <div className="lightbox-image"><Image src={imageUrl(selectedGallery.image, 1700, "focus" in selectedGallery ? selectedGallery.focus : undefined)} alt={selectedGallery.title} fill sizes="(max-width: 760px) 100vw, 70vw" unoptimized /></div>
               <div className="lightbox-copy"><span className="section-kicker">{selectedGallery.category}</span><h2 id="lightbox-title">{selectedGallery.title}</h2><p>{selectedGallery.description}</p><span className="lightbox-meta">SONY MIRRORLESS · DJI COMMERCIAL DRONE · TREASURE COAST, FL</span><p style={{ marginTop: 12, marginBottom: 0 }}>{selectedGallery.detail}</p></div>
             </motion.section>
           </motion.div>
