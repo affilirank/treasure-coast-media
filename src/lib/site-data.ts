@@ -22,10 +22,10 @@ export type Quote = {
 };
 
 export const realEstateTiers = [
-  { id: "under-1800", label: "Up to 1,800 SQFT" },
-  { id: "1801-2800", label: "1,801–2,800 SQFT" },
-  { id: "2801-3800", label: "2,801–3,800 SQFT" },
-  { id: "over-3800", label: "3,801+ SQFT" },
+  { id: "under-1800", label: "Up to 1,500 SQFT" },
+  { id: "1801-2800", label: "1,501–2,000 SQFT" },
+  { id: "2801-3800", label: "2,001–3,000 SQFT" },
+  { id: "over-3800", label: "3,001–4,000+ SQFT" },
 ] as const;
 
 export type RealEstateTierId = (typeof realEstateTiers)[number]["id"];
@@ -59,7 +59,7 @@ export const realEstatePackages = [
     target: "A complete listing-ready media foundation.",
     badge: undefined,
     features: ["HDR Stills", "5–8 4K Aerials", "Laser 2D Schematic Floor Plan"],
-    prices: [275, 345, 425, 525],
+    prices: [249, 325, 400, 500],
   },
   {
     id: "complete-showcase-suite",
@@ -77,7 +77,7 @@ export const realEstatePackages = [
       "Drone Property Boundary Line Graphic",
       "30-Day Automated Social Post Pack (first 30 days included — daily posts written and scheduled for you; continue monthly)",
     ],
-    prices: [895, 895, 995, 1095],
+    prices: [995, 995, 1095, 1195],
   },
   {
     id: "waterfront-estate-luxury-suite",

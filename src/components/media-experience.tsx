@@ -870,7 +870,7 @@ function RealEstateCalculator({
             </button>
           ))}
         </div>
-        <div className="tier-heading"><strong>Choose the home’s square footage</strong><span>{selectedPackage?.turnkey ? "Turnkey base covers up to 2,800 SQFT; +$100 / +$200 above." : "Photo-Only Essentials increases by $40 per tier."}</span></div>
+        <div className="tier-heading"><strong>Choose the home’s square footage</strong><span>{selectedPackage?.turnkey ? "Turnkey base covers up to 2,000 SQFT; +$100 per additional 1,000 SQFT." : "Full Media Suite increases with the home’s size."}</span></div>
         <div className="tier-grid" role="radiogroup" aria-label="Property square footage">
           {realEstateTiers.map((tier) => (
             <label className={`tier-option${tierId === tier.id ? " is-selected" : ""}`} key={tier.id}>
