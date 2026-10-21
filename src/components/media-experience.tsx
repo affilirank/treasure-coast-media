@@ -482,7 +482,7 @@ function CommercialShowcase({ onPlay }: { onPlay: () => void }) {
               </div>
               <div className="video-feature-shade" />
               <div className="video-topline">
-                <span className="video-chip"><Film size={13} /> Founder story · 4K</span>
+                <span className="video-chip"><Film size={13} /> Founder story · Brand film</span>
                 <span className="video-chip"><Mic2 size={13} /> 32-bit float audio</span>
               </div>
               <button className="video-center-play" type="button" aria-label="Play brand film" onClick={onPlay}>
@@ -2010,7 +2010,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
               ) : (
                 <video autoPlay controls playsInline poster="/videos/founder-story-poster.jpg"><source src={videoSources.founderStory} type="video/mp4" /></video>
               )}
-              <div className="video-modal-title">{track === "real-estate" ? "Golden Hour Luxury Mansion Tour · Agent walkthrough" : "Founder story · 4K brand film"}</div>
+              <div className="video-modal-title">{track === "real-estate" ? "Golden Hour Luxury Mansion Tour · Agent walkthrough" : "Founder story · Brand film"}</div>
             </motion.section>
           </motion.div>
         )}
