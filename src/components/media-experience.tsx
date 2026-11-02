@@ -65,6 +65,7 @@ import {
   videoSources,
   type CommercialPackageId,
   type CommercialRetainerId,
+  type AerialDivisionPackageId,
   type GalleryItem,
   type QuoteItem,
   type RealEstateAddOnId,
@@ -138,6 +139,12 @@ function createCommercialRetainers(): Record<CommercialRetainerId, boolean> {
   return Object.fromEntries(
     commercialRetainers.map(({ id }) => [id, false]),
   ) as Record<CommercialRetainerId, boolean>;
+}
+
+function createAerialSelections(): Record<AerialDivisionPackageId, boolean> {
+  return Object.fromEntries(
+    aerialDivisionPackages.map(({ id }) => [id, false]),
+  ) as Record<AerialDivisionPackageId, boolean>;
 }
 
 function createRealEstateRetainers(): Record<RealEstateRetainerId, boolean> {
@@ -687,7 +694,15 @@ function ServicesSection({
   );
 }
 
-function AerialDivisionSection({ onDiscuss }: { onDiscuss: (service: string) => void }) {
+function AerialDivisionSection({
+  selected,
+  onToggle,
+  onViewPricing,
+}: {
+  selected: Record<AerialDivisionPackageId, boolean>;
+  onToggle: (id: AerialDivisionPackageId, value: boolean) => void;
+  onViewPricing: () => void;
+}) {
   const [flyerOpen, setFlyerOpen] = useState(false);
 
   useEffect(() => {
@@ -738,8 +753,12 @@ function AerialDivisionSection({ onDiscuss }: { onDiscuss: (service: string) => 
                     <li key={line}><Check size={13} aria-hidden="true" />{line}</li>
                   ))}
                 </ul>
-                <button className="aerial-tier-cta" type="button" onClick={() => onDiscuss(pkg.name)}>
-                  Request this package <ArrowUpRight size={13} />
+                <button
+                  className={`aerial-tier-cta${selected[pkg.id] ? " is-added" : ""}`}
+                  type="button"
+                  onClick={() => onToggle(pkg.id, !selected[pkg.id])}
+                >
+                  {selected[pkg.id] ? "Added to your quote" : "Add to quote"} <ArrowUpRight size={13} />
                 </button>
               </article>
             ))}
@@ -751,6 +770,9 @@ function AerialDivisionSection({ onDiscuss }: { onDiscuss: (service: string) => 
               <span className="aerial-flyer-zoom">View full flyer <ArrowUpRight size={12} /></span>
             </button>
             <p className="aerial-flyer-note">Fully insured · FAA Part 107 licensed · 24-hour turnaround</p>
+            <button className="aerial-flyer-download" type="button" onClick={onViewPricing}>
+              Build your estimate <ArrowUpRight size={12} />
+            </button>
             <a className="aerial-flyer-download" href={aerialDivisionFlyer} download>
               Download the flyer <ArrowUpRight size={12} />
             </a>
@@ -1117,11 +1139,15 @@ function CommercialCalculator({
   onPackageChange,
   retainers,
   onRetainerChange,
+  aerial,
+  onAerialChange,
 }: {
-  packageId: CommercialPackageId;
-  onPackageChange: (packageId: CommercialPackageId) => void;
+  packageId: CommercialPackageId | "";
+  onPackageChange: (packageId: CommercialPackageId | "") => void;
   retainers: Record<CommercialRetainerId, boolean>;
   onRetainerChange: (id: CommercialRetainerId, selected: boolean) => void;
+  aerial: Record<AerialDivisionPackageId, boolean>;
+  onAerialChange: (id: AerialDivisionPackageId, selected: boolean) => void;
 }) {
   return (
     <div className="calculator">
@@ -1152,6 +1178,13 @@ function CommercialCalculator({
             </div>
           ))}
         </div>
+        <label className={`addon-row production-skip${packageId === "" ? " is-selected" : ""}`}>
+          <span className="addon-label">
+            <input className="sr-only" type="checkbox" checked={packageId === ""} onChange={(event) => onPackageChange(event.target.checked ? "" : "brand-story")} />
+            <span className="check-box" aria-hidden="true">{packageId === "" && <Check size={11} />}</span>
+            <span><strong>No production package</strong><small>Aerial inspection only — skip the video production tier.</small></span>
+          </span>
+        </label>
       </div>
       <div className="calculator-section">
         <div className="step-heading"><span className="step-number">02</span><h3>Add ongoing growth services</h3></div>
@@ -1172,6 +1205,22 @@ function CommercialCalculator({
             {commercialRetainers.find((item) => item.featured && retainers[item.id])?.included?.map((feature) => <li key={feature}>{feature}</li>)}
           </ul>
         )}
+      </div>
+      <div className="calculator-section">
+        <div className="step-heading"><span className="step-number">03</span><h3>Add aerial inspections</h3></div>
+        <div className="addon-list">
+          {aerialDivisionPackages.map((item) => (
+            <div className={`addon-row${aerial[item.id] ? " is-selected" : ""}`} key={item.id}>
+              <label className="addon-label">
+                <input className="sr-only" type="checkbox" checked={aerial[item.id]} onChange={(event) => onAerialChange(item.id, event.target.checked)} />
+                <span className="check-box" aria-hidden="true">{aerial[item.id] && <Check size={11} />}</span>
+                <span><strong>{item.name}</strong><small>{item.summary}</small></span>
+              </label>
+              <strong className="addon-price">{item.priceLabel.startsWith("From") ? `From ${money(item.price)}` : `+${money(item.price)}`}{item.billing === "monthly" ? " / mo" : " one-time"}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="calculator-note">FAA Part 107 licensed · Fully insured · Delivered within 24 hours of flight. Commercial scans are confirmed after a flight-planning review.</p>
       </div>
     </div>
   );
@@ -1594,8 +1643,9 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [realEstatePackageId, setRealEstatePackageId] = useState<RealEstatePackageId>("standard-mls-suite");
   const [realEstateVideoId, setRealEstateVideoId] = useState<RealEstateVideoId>("no-video");
   const [quantities, setQuantities] = useState<Record<RealEstateAddOnId, number>>(createRealEstateQuantities);
-  const [packageId, setPackageId] = useState<CommercialPackageId>("brand-story");
+  const [packageId, setPackageId] = useState<CommercialPackageId | "">("brand-story");
   const [retainers, setRetainers] = useState<Record<CommercialRetainerId, boolean>>(createCommercialRetainers);
+  const [aerialSelections, setAerialSelections] = useState<Record<AerialDivisionPackageId, boolean>>(createAerialSelections);
   const [realEstateRetainersSelected, setRealEstateRetainersSelected] = useState<Record<RealEstateRetainerId, boolean>>(createRealEstateRetainers);
   const [bookingFields, setBookingFields] = useState<BookingFields>(initialBooking);
   const [propertyCheck, setPropertyCheck] = useState<PropertyCheck>(initialPropertyCheck);
@@ -1619,7 +1669,11 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
   const [gatewayOpen, setGatewayOpen] = useState(false);
   const pricing = track === "real-estate"
     ? quoteRealEstate(realEstatePackageId, tierId, quantities, Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id), realEstateVideoId)
-    : quoteCommercial(packageId, Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id));
+    : quoteCommercial(
+        packageId,
+        Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id),
+        Object.entries(aerialSelections).filter(([, selected]) => selected).map(([id]) => id),
+      );
   const oneTimeTotal = pricing?.items.filter((item) => item.billing === "once").reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const recurringTotal = pricing?.recurring ?? 0;
   const promo = appliedPromoCode
@@ -1874,8 +1928,16 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
     const selection = {
       ...(track === "real-estate"
         ? { packageId: realEstatePackageId, tierId, videoId: realEstateVideoId, quantities, retainerIds: Object.entries(realEstateRetainersSelected).filter(([, selected]) => selected).map(([id]) => id) }
-        : { packageId, retainerIds: Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id) }),
-      selectedSqftTier: track === "real-estate" ? selectedTier?.label ?? "" : "Commercial production",
+        : {
+            packageId,
+            aerialIds: Object.entries(aerialSelections).filter(([, selected]) => selected).map(([id]) => id),
+            retainerIds: Object.entries(retainers).filter(([, selected]) => selected).map(([id]) => id),
+          }),
+      selectedSqftTier: track === "real-estate"
+        ? selectedTier?.label ?? ""
+        : packageId
+          ? "Commercial production"
+          : "Aerial inspection",
       basePrice,
       appliedPromoCode,
       discountAmount,
@@ -1954,6 +2016,8 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
                 onPackageChange={setPackageId}
                 retainers={retainers}
                 onRetainerChange={(id, selected) => setRetainers((current) => ({ ...current, [id]: selected }))}
+                aerial={aerialSelections}
+                onAerialChange={(id, selected) => setAerialSelections((current) => ({ ...current, [id]: selected }))}
               />
             )}
             <QuoteDrawer
@@ -2054,11 +2118,16 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           {track === "real-estate" ? <ComparisonSection /> : <CommercialShowcase onPlay={() => setVideoOpen(true)} />}
           {track === "real-estate" && <RealEstateVideo />}
           {track === "real-estate" && pricingSection}
-          {track === "real-estate" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ServicesSection track={track} onDiscuss={discussService} />
-          {track === "commercial" && <AerialDivisionSection onDiscuss={discussService} />}
           {track === "commercial" && pricingSection}
-
+          {track === "commercial" && (
+            <AerialDivisionSection
+              selected={aerialSelections}
+              onToggle={(id, value) => setAerialSelections((current) => ({ ...current, [id]: value }))}
+              onViewPricing={scrollToPricing}
+            />
+          )}
+          {track === "real-estate" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           {track === "commercial" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ProductionWorkflow track={track} />
           <BookingSection

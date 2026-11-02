@@ -102,11 +102,21 @@ export async function POST(request: Request) {
   } else if (track === "commercial") {
     const packageId = body.selection.packageId;
     const retainerIds = body.selection.retainerIds;
-    if (typeof packageId !== "string" || !Array.isArray(retainerIds) || !retainerIds.every((id) => typeof id === "string")) {
+    const aerialIds = body.selection.aerialIds;
+    if (
+      typeof packageId !== "string" ||
+      !Array.isArray(retainerIds) ||
+      !retainerIds.every((id) => typeof id === "string") ||
+      (aerialIds !== undefined && (!Array.isArray(aerialIds) || !aerialIds.every((id) => typeof id === "string")))
+    ) {
       return Response.json({ error: "The commercial production selection is invalid." }, { status: 400 });
     }
 
-    quote = quoteCommercial(packageId, retainerIds);
+    quote = quoteCommercial(
+      packageId,
+      retainerIds,
+      Array.isArray(aerialIds) ? aerialIds.filter((id): id is string => typeof id === "string") : [],
+    );
   } else {
     return Response.json({ error: "Choose a valid service track." }, { status: 400 });
   }

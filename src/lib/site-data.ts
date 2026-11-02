@@ -170,6 +170,7 @@ export const realEstateAddOns: RealEstateAddOn[] = [
   { id: "rush-delivery", label: "Same-Day Rush Delivery (by 9:00 PM)", price: 125, unit: "property" },
   { id: "social-post-pack", label: "30-Day Automated Social Post Pack", price: 195, unit: "property", included: "First 30 days included — daily posts written and scheduled for you. Continue as an ongoing monthly service." },
   { id: "social-syndication-engine", label: "30-Day Premium Social Syndication Engine", price: 250, unit: "property", included: "First 30 days included: 4 vertical reels (1 per week: Grand Arrival, Kitchen/Living, Waterfront/Patio, Primary Suite) + 8 branded feed/carousel posts, written and scheduled for you. Continue as an ongoing monthly service." },
+  { id: "residential-roof-inspection", label: "Aerial Roof Condition Inspection", price: 199, unit: "property", included: "20+ high-resolution (48MP) stills of every roof facet, plus close-ups of ridge caps, valleys, penetrations and flashing. Delivered within 24 hours of flight — keep your crew off dangerous roofs." },
 ] as const;
 
 export type RealEstateAddOnId = (typeof realEstateAddOns)[number]["id"];
@@ -296,6 +297,8 @@ export const commercialGrowthServices = commercialRetainers;
 export type AerialDivisionPackage = {
   id: string;
   name: string;
+  price: number;
+  billing: "once" | "monthly";
   priceLabel: string;
   cadence: string;
   summary: string;
@@ -307,6 +310,8 @@ export const aerialDivisionPackages: AerialDivisionPackage[] = [
   {
     id: "residential-roof-inspection",
     name: "Residential Roof Condition Inspection",
+    price: 199,
+    billing: "once",
     priceLabel: "$199",
     cadence: "per property",
     summary: "A complete visual record of every roof facet, delivered within 24 hours of flight.",
@@ -319,6 +324,8 @@ export const aerialDivisionPackages: AerialDivisionPackage[] = [
   {
     id: "commercial-roof-facility-scan",
     name: "Commercial Roof & Facility Scan",
+    price: 450,
+    billing: "once",
     priceLabel: "From $450",
     cadence: "per property",
     summary: "Full-perimeter aerial mapping built for property managers and facility teams.",
@@ -331,6 +338,8 @@ export const aerialDivisionPackages: AerialDivisionPackage[] = [
   {
     id: "construction-progress-documentation",
     name: "Construction Progress Documentation",
+    price: 350,
+    billing: "monthly",
     priceLabel: "$350",
     cadence: "per month",
     summary: "Bi-weekly flights that give lenders and clients a consistent record of the build.",
@@ -341,6 +350,14 @@ export const aerialDivisionPackages: AerialDivisionPackage[] = [
     ],
   },
 ];
+
+export type AerialDivisionPackageId = (typeof aerialDivisionPackages)[number]["id"];
+
+export function aerialDivisionPackageLabel(id: string) {
+  const pkg = aerialDivisionPackages.find((item) => item.id === id);
+  if (!pkg) return "";
+  return pkg.billing === "monthly" ? `${pkg.name} (${pkg.priceLabel}/mo)` : `${pkg.name} (${pkg.priceLabel})`;
+}
 
 export const aerialDivisionAssurances = [
   "FAA Part 107 Licensed",
@@ -573,24 +590,42 @@ export function resolvePromoDiscount(code: string, oneTimeTotal = 0, recurringTo
 export function quoteCommercial(
   packageId: string,
   retainerIds: string[],
+  aerialIds: string[] = [],
 ): Quote | null {
   const selectedPackage = commercialPackages.find((item) => item.id === packageId);
   const selectedRetainers = retainerIds.map((id) =>
     commercialRetainers.find((item) => item.id === id),
   );
+  const selectedAerial = aerialIds.map((id) =>
+    aerialDivisionPackages.find((item) => item.id === id),
+  );
 
-  if (!selectedPackage || selectedRetainers.some((item) => !item)) return null;
+  if (selectedRetainers.some((item) => !item)) return null;
+  if (selectedAerial.some((item) => !item)) return null;
+  // A production package is no longer mandatory: an aerial inspection can be
+  // booked on its own, so require only that something was actually selected.
+  if (!selectedPackage && selectedAerial.length === 0) return null;
 
   const items: QuoteItem[] = [
-    {
-      id: selectedPackage.id,
-      label: selectedPackage.name,
-      quantity: 1,
-      unitPrice: selectedPackage.price,
-      amount: selectedPackage.price,
-      billing: "once",
-    },
+    ...(selectedPackage
+      ? [{
+          id: selectedPackage.id,
+          label: selectedPackage.name,
+          quantity: 1,
+          unitPrice: selectedPackage.price,
+          amount: selectedPackage.price,
+          billing: "once" as const,
+        }]
+      : []),
     ...selectedRetainers.map((item) => ({
+      id: item!.id,
+      label: item!.name,
+      quantity: 1,
+      unitPrice: item!.price,
+      amount: item!.price,
+      billing: item!.billing,
+    })),
+    ...selectedAerial.map((item) => ({
       id: item!.id,
       label: item!.name,
       quantity: 1,
