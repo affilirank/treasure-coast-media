@@ -288,6 +288,68 @@ export const commercialRetainers: MarketingRetainer[] = [
 export type CommercialRetainerId = (typeof commercialRetainers)[number]["id"];
 export const commercialGrowthServices = commercialRetainers;
 
+/**
+ * Aerial Asset Division: FAA Part 107 inspection and progress-media packages.
+ * Priced per flight/property rather than per production day, so it lives outside
+ * the commercial production calculator and is quoted through the booking flow.
+ */
+export type AerialDivisionPackage = {
+  id: string;
+  name: string;
+  priceLabel: string;
+  cadence: string;
+  summary: string;
+  includes: string[];
+  badge?: string;
+};
+
+export const aerialDivisionPackages: AerialDivisionPackage[] = [
+  {
+    id: "residential-roof-inspection",
+    name: "Residential Roof Condition Inspection",
+    priceLabel: "$199",
+    cadence: "per property",
+    summary: "A complete visual record of every roof facet, delivered within 24 hours of flight.",
+    includes: [
+      "20+ high-resolution (48MP) detail stills covering all roof facets",
+      "Close-ups of ridge caps, valleys, penetrations, and flashing",
+      "Branded digital photo portfolio ready for client presentations or insurance claims",
+    ],
+  },
+  {
+    id: "commercial-roof-facility-scan",
+    name: "Commercial Roof & Facility Scan",
+    priceLabel: "From $450",
+    cadence: "per property",
+    summary: "Full-perimeter aerial mapping built for property managers and facility teams.",
+    includes: [
+      "Full perimeter and top-down visual mapping of commercial roof surfaces",
+      "High-resolution defect pinpointing: ponding water, membrane wear, and HVAC rooftop units",
+    ],
+    badge: "Most requested",
+  },
+  {
+    id: "construction-progress-documentation",
+    name: "Construction Progress Documentation",
+    priceLabel: "$350",
+    cadence: "per month",
+    summary: "Bi-weekly flights that give lenders and clients a consistent record of the build.",
+    includes: [
+      "Bi-weekly scheduled flights over active build sites",
+      "Consistent altitude and perimeter tracking shots for bank draws and client updates",
+      "Raw 4K video walkthrough plus orthomosaic overview photos",
+    ],
+  },
+];
+
+export const aerialDivisionAssurances = [
+  "FAA Part 107 Licensed",
+  "Fully Insured",
+  "24-Hour Turnaround",
+] as const;
+
+export const aerialDivisionFlyer = "/images/aerial-division-flyer.jpg";
+
 export const realEstateRetainers: MarketingRetainer[] = [
   { id: "open-house-lead-surge", name: "Open House Lead Surge Sprint", detail: "A 7-day geo-fenced Meta listing ad campaign with a digital sign-in landing page.", price: 195, billing: "once", unit: "property" },
   { id: "sphere-email-engine", name: "Sphere of Influence & Past-Client Email Engine", detail: "Two localized, branded email newsletters each month for past clients and your database.", price: 245, billing: "monthly" },

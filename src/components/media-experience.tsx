@@ -43,6 +43,9 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { emptyPropertyDetails, type BookingPropertyDetails } from "@/lib/booking-property";
 import {
+  aerialDivisionAssurances,
+  aerialDivisionFlyer,
+  aerialDivisionPackages,
   commercialGallery,
   commercialPackages,
   commercialRetainers,
@@ -609,7 +612,7 @@ function ServicesSection({
   track: Track;
   onDiscuss: (service: string) => void;
 }) {
-  const services: { title: string; detail: string; price?: string; badge?: string; specs?: string[] }[] = track === "real-estate"
+  const services: { title: string; detail: string; price?: string; badge?: string; specs?: string[]; href?: string }[] = track === "real-estate"
     ? [
         { title: "Architectural HDR", detail: "Carefully blended exposures, clean verticals and natural window detail." },
         { title: "HD Aerial Stills", detail: "FAA Part 107 drone perspectives that make the setting easy to understand." },
@@ -629,6 +632,7 @@ function ServicesSection({
         { title: "Landing Page Funnels", detail: "Fast campaign pages with a single next step and clear conversion tracking." },
         { title: "Paid Search & Social", detail: "Managed Meta, TikTok, Google Search and Local Services campaigns." },
         { title: "CRM & Lead Nurture", detail: "Useful automations that help local businesses respond while intent is high." },
+        { title: "Aerial Roof & Site Inspections", detail: "FAA Part 107 drone inspections for residential roofs, commercial facilities, and construction progress — delivered within 24 hours of flight. Keep your crew off dangerous roofs.", price: "From $199", badge: "Aerial Asset Division", href: "#aerial-inspections" },
         { title: "AI Clone + Voice Promo Video", detail: "A 30-second customer-acquisition promo using an approved digital likeness and voice when you prefer not to record on camera.", price: "$495 / 30 seconds", badge: "Consent-based AI presenter", specs: ["Scripted direct-response promo", "Approved likeness and voice only", "Social-ready 9:16 delivery"] },
         { title: "Up to 90-Second AI Presenter Video", detail: "A consent-based presenter video up to 90 seconds using an approved likeness and voice for longer commercial offers and campaigns.", price: "$695 / up to 90 seconds", badge: "Consent-based AI presenter", specs: ["Approved likeness and voice only", "Scripted presenter promo", "Branded captions for social and landing pages"] },
       ];
@@ -664,15 +668,106 @@ function ServicesSection({
                     <p>{service.detail}</p>
                     {service.badge && <div className="service-featured-meta"><span>{service.badge}</span><strong>{service.price}</strong></div>}
                     {service.specs && <ul className="service-specs">{service.specs.map((spec) => <li key={spec}>{spec}</li>)}</ul>}
-                    <button className="service-discuss" type="button" onClick={() => onDiscuss(service.title)}>
-                      Discuss this service <ArrowUpRight size={15} />
-                    </button>
+                    {service.href ? (
+                      <a className="service-discuss" href={service.href}>
+                        View aerial packages <ArrowUpRight size={15} />
+                      </a>
+                    ) : (
+                      <button className="service-discuss" type="button" onClick={() => onDiscuss(service.title)}>
+                        Discuss this service <ArrowUpRight size={15} />
+                      </button>
+                    )}
                   </div>
               </article>
             );
           })}
         </div>
       </div>
+    </section>
+  );
+}
+
+function AerialDivisionSection({ onDiscuss }: { onDiscuss: (service: string) => void }) {
+  const [flyerOpen, setFlyerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!flyerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFlyerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [flyerOpen]);
+
+  return (
+    <section className="section section-dark aerial-division" id="aerial-inspections" aria-labelledby="aerial-division-title">
+      <div className="shell">
+        <div className="aerial-division-head">
+          <div>
+            <span className="section-kicker">Merit Media &amp; Marketing · Aerial Asset Division</span>
+            <h2 id="aerial-division-title">High-resolution aerial <em>roof &amp; site data.</em></h2>
+          </div>
+          <p className="section-intro">
+            Keep your crew off dangerous roofs. We deliver comprehensive, high-resolution aerial inspection packages within 24 hours of flight.
+          </p>
+        </div>
+
+        <ul className="aerial-assurances" aria-label="Certifications and turnaround">
+          {aerialDivisionAssurances.map((item) => (
+            <li key={item}><ShieldCheck size={14} aria-hidden="true" />{item}</li>
+          ))}
+        </ul>
+
+        <div className="aerial-division-body">
+          <div className="aerial-tier-list">
+            {aerialDivisionPackages.map((pkg) => (
+              <article className="aerial-tier" key={pkg.id}>
+                <div className="aerial-tier-head">
+                  <div>
+                    <h3>{pkg.name}</h3>
+                    <p>{pkg.summary}</p>
+                    {pkg.badge && <span className="aerial-tier-badge">{pkg.badge}</span>}
+                  </div>
+                  <div className="aerial-tier-price">
+                    <strong>{pkg.priceLabel}</strong>
+                    <span>{pkg.cadence}</span>
+                  </div>
+                </div>
+                <ul className="aerial-tier-includes">
+                  {pkg.includes.map((line) => (
+                    <li key={line}><Check size={13} aria-hidden="true" />{line}</li>
+                  ))}
+                </ul>
+                <button className="aerial-tier-cta" type="button" onClick={() => onDiscuss(pkg.name)}>
+                  Request this package <ArrowUpRight size={13} />
+                </button>
+              </article>
+            ))}
+          </div>
+
+          <aside className="aerial-flyer">
+            <button className="aerial-flyer-frame" type="button" onClick={() => setFlyerOpen(true)} aria-label="View the full Aerial Asset Division flyer">
+              <Image src={aerialDivisionFlyer} alt="Aerial Asset Division flyer: FAA Part 107 aerial roof and site inspections" width={760} height={1140} sizes="(max-width: 1000px) 70vw, 360px" />
+              <span className="aerial-flyer-zoom">View full flyer <ArrowUpRight size={12} /></span>
+            </button>
+            <p className="aerial-flyer-note">Fully insured · FAA Part 107 licensed · 24-hour turnaround</p>
+            <a className="aerial-flyer-download" href={aerialDivisionFlyer} download>
+              Download the flyer <ArrowUpRight size={12} />
+            </a>
+          </aside>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {flyerOpen && (
+          <motion.div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setFlyerOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.section className="aerial-flyer-modal" role="dialog" aria-modal="true" aria-label="Aerial Asset Division flyer" initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .98 }}>
+              <button className="icon-button lightbox-close" type="button" aria-label="Close flyer" onClick={() => setFlyerOpen(false)}><X size={17} /></button>
+              <Image src={aerialDivisionFlyer} alt="Aerial Asset Division flyer" width={1024} height={1536} sizes="90vw" />
+            </motion.section>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -1882,14 +1977,14 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
         <div className="shell nav-shell">
           <Brand track={track} />
           <nav className="desktop-nav" aria-label="Main navigation">
-            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a><a href="#ai-presenter">AI presenter</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Book a Call <ArrowUpRight size={13} /></a>
+            <a href="#services">Services</a><a href="#showcase">Portfolio</a><a href="#pricing">Pricing</a>{track === "commercial" && <a href="#aerial-inspections">Aerial inspections</a>}<a href="#ai-presenter">AI presenter</a><a className="nav-phone" href="tel:+17722901756">772-290-1756</a><a className="nav-book" href="#booking">Book a Call <ArrowUpRight size={13} /></a>
           </nav>
           <button className="mobile-menu-toggle" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
         </div>
         <nav className={`mobile-nav${menuOpen ? " is-open" : ""}`} aria-label="Mobile navigation">
-          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a><a href="#ai-presenter" onClick={() => setMenuOpen(false)}>AI presenter</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Book a Call <ArrowUpRight size={12} /></a>
+          <a href="#services" onClick={() => setMenuOpen(false)}>Services</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Portfolio showcase</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing calculator</a>{track === "commercial" && <a href="#aerial-inspections" onClick={() => setMenuOpen(false)}>Aerial inspections</a>}<a href="#ai-presenter" onClick={() => setMenuOpen(false)}>AI presenter</a><a href="tel:+17722901756" onClick={() => setMenuOpen(false)}>Call 772-290-1756</a><a href="#booking" onClick={() => setMenuOpen(false)}>Book a Call <ArrowUpRight size={12} /></a>
         </nav>
       </header>
 
@@ -1961,6 +2056,7 @@ export default function MediaExperience({ initialTrack }: { initialTrack: Track 
           {track === "real-estate" && pricingSection}
           {track === "real-estate" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
           <ServicesSection track={track} onDiscuss={discussService} />
+          {track === "commercial" && <AerialDivisionSection onDiscuss={discussService} />}
           {track === "commercial" && pricingSection}
 
           {track === "commercial" && <AiPresenterSection track={track} onAddToQuote={addAiToQuote} />}
